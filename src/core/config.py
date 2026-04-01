@@ -1,10 +1,22 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+
+
+_base_config = SettingsConfigDict(
+        env_file="./.env",
+        env_ignore_empty=True,
+        extra="ignore"
+)
 
 
 class Settings(BaseSettings):
+    # Database 
+    DATABASE_URL: str 
 
-    # Database
-    DATABASE_URL: str
+    # Supabase 
+    SUPABASE_URL: str
+    SUPABASE_KEY: str 
+    SUPABASE_BUCKET: str 
 
     REDIS_HOST: str
     REDIS_PORT: str
@@ -17,13 +29,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "EyeTracking"
     APP_DOMAIN: str = "localhost:8000"
 
-    class Config:
-        env_file = ".env"
-        extra="ignore"
+    model_config = _base_config
 
 
 class NotificationSettings(BaseSettings):
-
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
     MAIL_FROM: str
@@ -38,11 +47,17 @@ class NotificationSettings(BaseSettings):
     TWILIO_SID: str 
     TWILIO_AUTH_TOKEN: str
     TWILIO_NUMBER: str
-
-    class Config:
-        env_file = ".env"
-        extra="ignore"
+    
+    model_config = _base_config
 
 
+@lru_cache
 def get_settings():
     return Settings()
+
+@lru_cache
+def get_notification_settings():
+    return NotificationSettings()
+
+settings = get_settings()
+notification_settings = get_notification_settings()
