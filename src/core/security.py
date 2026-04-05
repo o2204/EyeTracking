@@ -6,7 +6,15 @@ from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from src.services.utils import decode_access_token 
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/user-access-token")
+oauth2_user_scheme = OAuth2PasswordBearer(
+    tokenUrl="/user/user-access-token",
+    scheme_name="UserAuth"
+)
+
+oauth2_admin_scheme = OAuth2PasswordBearer(
+    tokenUrl="/admin/login",
+    scheme_name="AdminAuth"
+)
 
 
 class AccessTokenBearer(HTTPBearer):

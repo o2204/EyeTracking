@@ -3,7 +3,7 @@ from redis.asyncio import Redis
 from src.core.config import settings
 
 
-_token_blacklist = Redis(     ## When i don't share this we use _
+_token_blacklist = Redis(     ## When i don't share this we use '_'
     host=settings.REDIS_HOST,
     port=settings.REDIS_PORT,
     db=0,

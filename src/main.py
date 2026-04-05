@@ -4,6 +4,8 @@ from fastapi import FastAPI
 
 from src.routers.user_router import user_router
 from src.routers.gaze_control_router import gaze_controller_router
+from src.routers.admin_router import admin_router
+
 from src.clients.db.database import engine
 from src.clients.db.redis import _token_blacklist
 
@@ -32,3 +34,4 @@ async def get_root():
 
 app.include_router(user_router)
 app.include_router(gaze_controller_router)
+app.include_router(admin_router)

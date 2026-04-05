@@ -2,30 +2,24 @@ from datetime import timedelta
 from uuid import UUID
 
 from fastapi import BackgroundTasks, HTTPException, status 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from passlib.context import CryptContext
-
-
 from src.models.user_model import UserModel
-from src.services.utils import decode_url_safe_token, generate_access_token, generate_url_safe_token
+from src.services.utils import decode_url_safe_token, generate_url_safe_token
 from src.core.config import settings
 from src.services.notification_service import NotificationService
 
 from src.services.base_service import BaseService
-
-password_context = CryptContext(
-    schemes=["bcrypt"], 
-    deprecated="auto"
-)
+from src.services.auth_service import AuthService
 
 
 class UserService(BaseService):
-    def __init__(self, model: UserModel, session: AsyncSession, tasks: BackgroundTasks):
+    def __init__(self, model: UserModel, session: AsyncSession, tasks: BackgroundTasks, auth_service: AuthService):
         self.model = model
         self.session = session
         self.notification_service = NotificationService(tasks)
+        self.auth = auth_service
     
     async def _add_user(self, data: dict, router_prefix: str) -> UserModel:
 
@@ -39,7 +33,7 @@ class UserService(BaseService):
         user = self.model(
             email=data["email"],
             name=data["name"],
-            password_hash=password_context.hash(data["password"]),
+            password_hash=self.auth.hash_password(data["password"]),
         )
 
         # Add user to the database and get refreshed data
@@ -79,36 +73,17 @@ class UserService(BaseService):
             select(self.model).where(self.model.email == email)
         )
     
-    async def _generate_token(self, email, password) -> str:
-        # Validate user credentials
+    async def login(self, email: str, password: str) -> str:
         user = await self._get_by_email(email)
+        self.auth.validate_credentials(user, password)
 
-        if not user or not password_context.verify(
-            password, 
-            user.password_hash,
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Email or password is incorrect"
-            )
-        
-        if not user.email_verified:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email is not verified"
-            )
-        
-        return generate_access_token(
-            data={
-                "user": {
-                    "name": user.name,
-                    "id": str(user.id),
-                }
-            }
-        )
+        return self.auth.generate_token(user)
     
     async def send_password_reset_link(self, email, router_prefix):
         user = await self._get_by_email(email)
+
+        if not user:
+            return # Don't reveal if the email exists or not
 
         token = generate_url_safe_token({"id": str(user.id)}, salt="password-reset")
 
@@ -149,6 +124,18 @@ class UserService(BaseService):
                 detail="Password must be at least 8 characters long"
             )
         
-        user.password_hash = password_context.hash(new_password)
+        user.password_hash = self.auth.hash_password(new_password)
         await self._update(user)
         return True
+    
+    async def get_users_count(self) -> int:
+        result = await self.session.scalar(
+            select(func.count()).select_from(self.model)
+        )
+        return result or 0
+    
+    async def get_verified_users_count(self) -> int:
+        result = await self.session.scalar(
+            select(func.count()).select_from(self.model).where(self.model.email_verified.is_(True)) ## When is_(True) is used, it generates the SQL condition "email_verified IS TRUE"
+        )
+        return result or 0

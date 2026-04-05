@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 
 from src.schemas.user_schema import UserCreate 
-from src.core.cointer import UserServiceDep, get_access_token
+from src.core.cointer import UserServiceDep, get_user_token
 from src.schemas.user_schema import UserRead
 from src.clients.db.redis import add_jti_to_blacklist
 from src.core.config import settings
@@ -28,19 +28,19 @@ async def create_user(
 
 
 ### Login the user 
-@user_router.post("/user-access-token")
+@user_router.post("/login")
 async def login_user(
     request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: UserServiceDep,
 ):
-    token = await service._generate_token(
+    token = await service.login(
         request_form.username, 
         request_form.password
     )
 
     return {
         "access_token": token,
-        "type": "jwt"
+        "token_type": "bearer"
     }
 
 
@@ -123,7 +123,7 @@ async def reset_password(
 ### Logout the user 
 @user_router.get("/logout")
 async def logout_user(
-    token_data: Annotated[dict, Depends(get_access_token)],
+    token_data: Annotated[dict, Depends(get_user_token)],
 ):
     await add_jti_to_blacklist(token_data["jti"]) 
 

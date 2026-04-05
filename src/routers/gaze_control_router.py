@@ -1,5 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from src.core.cointer import GazeControllerDep
+
+from src.services.gaze_controller_service import GazeControllerService
+from src.services.ws_auth_service import get_current_user_ws
 
 
 gaze_controller_router = APIRouter(
@@ -8,17 +10,20 @@ gaze_controller_router = APIRouter(
 )
 
 @gaze_controller_router.websocket("/gaze-control")
-async def gaze_controller(
-    websocket: WebSocket, 
-    gaze_service: GazeControllerDep
-):
-    
-    await websocket.accept()
+async def gaze_controller(websocket: WebSocket):
 
-    user_id = "USER_ID_FROM_TOKEN"
-    gaze = GazeControllerDep(user_id=user_id)
+    await websocket.accept()
+    
+    user = await get_current_user_ws(websocket)
+
+    if not user:
+        return 
+    
+    user_id = user["id"]
+    
+    gaze = GazeControllerService(user_id=user_id)
     
     try:
-        await gaze_service.run(websocket)
+        await gaze.run(websocket)
     except WebSocketDisconnect:
-        print("Client disconnected")
+        print(f"User {user_id} disconnected")
