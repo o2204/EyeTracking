@@ -11,7 +11,9 @@ from src.clients.db.database import Base
 from src.models.user_model import UserModel
 from src.models.calibration_points_model import CalibrationPointsModel
 from src.models.admin_model import AdminModel
-
+from src.models.user_actions_model import UserAction
+from src.models.devices_model import DevicesModel
+from src.models.recommendation_model import RecommendationModel
 
 from src.core.config import get_settings
 

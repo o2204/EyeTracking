@@ -15,11 +15,11 @@ from src.services.auth_service import AuthService
 
 
 class UserService(BaseService):
-    def __init__(self, model: UserModel, session: AsyncSession, tasks: BackgroundTasks, auth_service: AuthService):
-        self.model = model
+    def __init__(self, model: UserModel, session: AsyncSession, auth_service: AuthService, tasks: BackgroundTasks):
         self.session = session
-        self.notification_service = NotificationService(tasks)
+        self.model = model
         self.auth = auth_service
+        self.notification_service = NotificationService(tasks)
     
     async def _add_user(self, data: dict, router_prefix: str) -> UserModel:
 

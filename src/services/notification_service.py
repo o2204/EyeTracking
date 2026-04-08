@@ -1,3 +1,10 @@
+import smtplib
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+
 from fastapi import BackgroundTasks
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
@@ -76,3 +83,28 @@ class NotificationService:
     
     async def send_emergency_sms(self, to: str, body: Default_Message_For_Emergency):
         await self.send_sms(to, body.body)
+
+    async def send_email_with_pdf(self, to_email, subject, body, file_path):
+        msg = MIMEMultipart()
+        msg["From"] = self.from_email()
+        msg["To"] = to_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(body, "plain"))
+
+        # attach PDF 
+        with open(file_path, "rb") as f:
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(f.read())
+        
+        encoders.encode_base64(part)
+        part.add_header(
+            "Content-Disposition",
+            "attachment; filename=report.pdf"
+        )
+        
+        msg.attach(part)
+        with smtplib.SMTP(self.host, self.port) as server:
+            server.starttls()
+            server.login(self.username, self.password)
+            server.send_message(msg)

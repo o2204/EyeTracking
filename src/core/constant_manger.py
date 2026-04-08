@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 
@@ -6,3 +7,9 @@ TEMPLATE_DIR = BASE_DIR / "src" / "templates"
 
 class Default_Message_For_Emergency:
     body = "Emergency Alert: Unusual Eye Movement Detected. Please check on the user immediately."
+
+
+class ActionTypeEnum(str, Enum):
+    ON = "on"
+    OFF = "off"
+    ADJUST = "adjust"

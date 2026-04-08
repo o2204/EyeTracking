@@ -4,14 +4,18 @@ from typing_extensions import Annotated
 from fastapi import BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.clients.ai_client.ai_client import AIClient
 from src.core.constant_manger import TEMPLATE_DIR
 from src.core.security import oauth2_user_scheme, oauth2_admin_scheme
 from src.clients.db.database import get_db
 from src.models.admin_model import AdminModel
 from src.services.admin_service import AdminService
+from src.services.analysis_service import AnalysisService
 from src.services.auth_service import AuthService
 from src.services.calibration_points_service import CalibrationPointsService
 from src.services.connection_manger_service import ConnectionManagerService
+from src.services.notification_service import NotificationService
+from src.services.pdf_service import PDFService
 from src.services.user_service import UserService
 from src.services.utils import decode_access_token
 from src.models.user_model import UserModel
@@ -134,3 +138,50 @@ AdminDep = Annotated[
     AdminModel,
     Depends(get_current_admin)
 ]
+
+## AI client 
+def get_ai_client():
+    return AIClient()
+
+AIClientDep = Annotated[
+    AIClient,
+    Depends(get_ai_client)
+]
+
+## Notification Service 
+def get_notification_service(tasks: BackgroundTasks) -> NotificationService:
+    return NotificationService(tasks=tasks)
+
+NotificationDep = Annotated[
+    NotificationService,
+    Depends(get_notification_service)
+]
+
+## PDF Service 
+def get_pdf_service() -> PDFService:
+    return PDFService()
+
+PDFDep = Annotated[
+    PDFService,
+    Depends(get_pdf_service)
+]
+## Analysis Service 
+def get_analysis_service(
+        db: SessionDep,
+        ai_client: AIClientDep,
+        notification_service: NotificationDep,
+        pdf_service: PDFDep,
+) -> AnalysisService:
+    
+    return AnalysisService(
+        db,
+        ai_client,
+        notification_service,
+        pdf_service
+    )
+
+AnalysisServiceDep = Annotated[
+    AnalysisService,
+    Depends(get_analysis_service)
+]
+

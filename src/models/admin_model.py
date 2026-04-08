@@ -1,5 +1,7 @@
 import uuid
-from sqlalchemy import Column, String, Boolean
+
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 
 from src.clients.db.database import Base
@@ -8,19 +10,29 @@ from src.clients.db.database import Base
 class AdminModel(Base):
     __tablename__ = "admin"
 
-    id = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
 
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
 
-    is_superuser = Column(Boolean, default=False)
+    email: Mapped[str] = mapped_column(
+        String,
+        unique=True,
+        nullable=False
+    )
 
-    email_verified = Column(Boolean, default=False)
-    must_reset_password = Column(Boolean, default=True)
-    reset_email_sent = Column(Boolean, default=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    password_hash = Column(String, nullable=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    must_reset_password: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    reset_email_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    password_hash: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True
+    )

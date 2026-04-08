@@ -2,12 +2,16 @@
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
     "cSpell.words": [
+        "automations",
         "cooldown",
+        "crewai",
         "fastmail",
+        "httpx",
         "joblib",
         "scikit",
         "superadmin",
         "timedleta",
+        "weasyprint",
         "zxcvbn"
     ]
 }

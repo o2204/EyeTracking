@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # App Settings 
     APP_NAME: str = "EyeTracking"
     APP_DOMAIN: str = "localhost:8000"
+    
+    # AI Service URL 
+    AI_SERVICE_URL: str 
 
     model_config = _base_config
 
