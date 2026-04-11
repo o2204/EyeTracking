@@ -1,23 +1,22 @@
-from supabase import create_async_client, AsyncClient
-from core.config import Settings
+from src.clients.supabase.base_client import SupabaseBaseClient
 
 
 class SupabaseClient:
-
-    def __init__(self, client: AsyncClient):
-        self.client = client
-
-    @classmethod
-    async def create(cls, settings: Settings):
-        url = settings.SUPABASE_URL
-        key = settings.SUPABASE_KEY
-
-        if not url or not key:
-            raise RuntimeError("Supabase env vars missing")
-        
+    def __init__(self, base: SupabaseBaseClient):
+        self.client = base.client
+    
+    async def upload_pdf(self, file_path: str, file_bytes: bytes):
         try:
-            client = await create_async_client(url, key)
-            return cls(client)
-        
+            await self.client.storage.from_("reports").upload(
+                file_path,
+                file_bytes,
+                {"content-type": "application/pdf"}
+            )
+
+            response = await self.client.storage.from_("reports").create_signed_url(
+                file_path,
+                300
+            )
+            return response['signedURL']
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize Supabase client: {e}")
+            raise RuntimeError(f"Failed to upload PDF to Supabase: {e}")

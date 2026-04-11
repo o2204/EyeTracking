@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from fastapi import HTTPException, status
 
 from src.clients.ai_client.ai_client import AIClient
+from src.clients.supabase.supabase_client import SupabaseClient
 from src.core.logger import setup_logger
 from src.models.devices_model import DevicesModel
 from src.models.recommendation_model import RecommendationModel
@@ -17,11 +19,12 @@ from src.services.notification_service import NotificationService
 
 
 class AnalysisService(BaseService):
-    def __init__(self, session: AsyncSession, ai_client: AIClient, notification_service: NotificationService, pdf_service: PDFService):
+    def __init__(self, session: AsyncSession, ai_client: AIClient, notification_service: NotificationService, pdf_service: PDFService, supabase_client: SupabaseClient):
         super().__init__(UserAction, session)
         self.ai_client = ai_client
         self.notification_service = notification_service
         self.pdf_service = pdf_service
+        self.supabase_client = supabase_client
         self.logger = setup_logger("Analysis Service")
     
     async def _get_user(self, user_id):
@@ -81,8 +84,6 @@ class AnalysisService(BaseService):
     
     # Analysis user
     async def analyze_user(self, user_id):
-        pdf_path = f"/tmp/report_{user_id}.pdf"
-
         actions = await self.get_user_actions_last_2weeks(user_id)
 
         if not actions:
@@ -106,13 +107,27 @@ class AnalysisService(BaseService):
                     detail="Invalid response from AI service"
                 )
             
+            pdf_bytes = self.pdf_service.generate_pdf_bytes(
+                "analysis_pdf.html",
+                {
+                    "username": user.name,
+                    "actions": formatted,
+                    "recommendations": result["recommendations"]
+                }
+            )
+
+            file_path = f"reports/{user_id}/{uuid.uuid4()}.pdf"
+
+            await self.supabase_client.upload_pdf(file_path, pdf_bytes)
+
             saved = [
                 RecommendationModel(
                     user_id=user_id,
                     device=rec["device"],
                     action=rec["action"],
                     time=rec["time"],
-                    recommendation=rec["recommendation"]
+                    recommendation=rec["recommendation"],
+                    report_url=file_path
                 )
                 for rec in result["recommendations"]
             ]
@@ -120,34 +135,31 @@ class AnalysisService(BaseService):
             self.session.add_all(saved)
             await self.session.commit()
 
-            # Generate PDF
-            try:
-                self.pdf_service.generate_pdf(
-                    "analysis_pdf.html",
-                    {
-                        "username": user.name,
-                        "actions": formatted,
-                        "recommendations": result["recommendations"]
-                    },
-                    pdf_path 
-                )
+            pdf_url = await self.supabase_client.get_signed_url(file_path)
 
-                # Send Email with PDF 
-                self.notification_service.send_email_with_pdf(
-                    user.email,
-                    "Your Smart Home Analysis Report",
-                    "Please find attached your report",
-                    pdf_path
+            if not pdf_url:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to generate PDF report"
                 )
-            except Exception as e:
-                self.logger.warning(f"Post-processing failed: {str(e)}")
             
-            return saved
-
+            await self.notification_service.send_email_with_template(
+                recipients=[user.email],
+                subject="Your Eye Tracking Analysis Report",
+                context={
+                    "username": user.name,
+                    "pdf_url": pdf_url
+                },
+                template_name="report_email.html"
+            )
+            return saved 
+        
         except Exception as e:
+            self.logger.error(f"Error during analysis for user {user_id}: {e}")
+
             raise HTTPException(
-                status_code=500,
-                detail=f"Analysis failed: {str(e)}"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred during analysis"
             )
             
     async def make_decision(self, user_id, recommendation_id, decision):
@@ -169,5 +181,8 @@ class AnalysisService(BaseService):
 
         await self.session.commit()
         await self.session.refresh(recommendation)
+
+        if recommendation.status == "accepted":
+            await self.automation_service.handle_recommendation(recommendation)
 
         return recommendation

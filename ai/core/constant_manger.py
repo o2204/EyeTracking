@@ -9,22 +9,21 @@ ANALYSIS_PROMPT_TEMPLATE = "\n".join([
     "Analyze the following user behavior data:",
     "{formatted_data}",
     "",
-    "Instructions:",
-    "- Detect repeated patterns",
-    "- Suggest useful automations",
-    "- Be concise and clear",
-    "",
     "Return ONLY valid JSON in this format:",
-    "[",
-    "  {",
-    '    "device": "...",',
-    '    "action": "...",',
-    '    "time": "...",',
-    '    "recommendation": "..."',
-    "  }",
-    "]"
+    "{",
+    '  "recommendations": [',
+    "    {",
+    '      "device": "...",',
+    '      "action": {',
+    '         "type": "ON | OFF | SET_TEMPERATURE | SET_SPEED",',
+    '         "value": 0 (optional)',
+    "      },",
+    '      "time": "HH:MM",',
+    '      "recommendation": "..."',
+    "    }",
+    "  ]",
+    "}"
 ])
-
 
 class LLMConstants:
     LLM_DEFAULT_TEMPERATURE = 0.2

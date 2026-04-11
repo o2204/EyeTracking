@@ -16,6 +16,7 @@ from src.services.calibration_points_service import CalibrationPointsService
 from src.services.connection_manger_service import ConnectionManagerService
 from src.services.notification_service import NotificationService
 from src.services.pdf_service import PDFService
+from src.services.scheduler_service import SchedulerService
 from src.services.user_service import UserService
 from src.services.utils import decode_access_token
 from src.models.user_model import UserModel
@@ -185,3 +186,13 @@ AnalysisServiceDep = Annotated[
     Depends(get_analysis_service)
 ]
 
+# Scheduler Service
+scheduler_service = SchedulerService()
+
+def get_scheduler_service() -> SchedulerService:
+    return scheduler_service
+
+SchedulerServiceDep = Annotated[
+    SchedulerService,
+    Depends(get_scheduler_service)
+]
