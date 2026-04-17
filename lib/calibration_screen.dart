@@ -51,6 +51,8 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
 
     final isActive = index == activeDot;
 
+    final theme = Theme.of(context);
+
     return Align(
       alignment: positions[index],
       child: Padding(
@@ -61,12 +63,12 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
           width: isActive ? 40 : 20,
           height: isActive ? 40 : 20,
           decoration: BoxDecoration(
-            color: isActive ? Colors.blue : Colors.grey.shade400,
+            color: isActive ? theme.primaryColor : Colors.grey.shade400,
             shape: BoxShape.circle,
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: Colors.blue.withOpacity(0.5),
+                      color: theme.primaryColor.withOpacity(0.5),
                       blurRadius: 10,
                       spreadRadius: 2,
                     )

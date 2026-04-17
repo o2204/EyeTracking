@@ -16,14 +16,14 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF1A1A1A),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
           child: Column(
             children: [
               _buildProfileHeader(theme),
-              const SizedBox(height: 40),
+              const SizedBox(height: 45),
               _buildProfileOptions(theme),
             ],
           ),
@@ -33,34 +33,66 @@ class ProfileView extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(ThemeData theme) {
+    final Color accentBlue = theme.colorScheme.secondary;
+    
     return Column(
       children: [
         Container(
-          width: 120,
-          height: 120,
+          width: 130,
+          height: 130,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: theme.primaryColor.withOpacity(0.1),
+            gradient: LinearGradient(
+              colors: [accentBlue.withOpacity(0.15), accentBlue.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: Border.all(
-              color: theme.primaryColor.withOpacity(0.3),
+              color: accentBlue.withOpacity(0.4),
               width: 3,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: accentBlue.withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+              ),
+            ],
           ),
-          child: Icon(Icons.person, size: 60, color: theme.primaryColor),
+          child: Icon(Icons.person_rounded, size: 65, color: accentBlue),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Text(
           'Omar Atef',
           style: TextStyle(
             fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: theme.primaryColor,
+            fontWeight: FontWeight.w800,
+            color: theme.colorScheme.secondary, // explicitly blue
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'EyeIntelligent@Omar.com',
-          style: TextStyle(fontSize: 16, color: theme.disabledColor),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Text(
+            'EyeIntelligent@Omar.com',
+            style: TextStyle(
+              fontSize: 14, 
+              fontWeight: FontWeight.w600,
+              color: theme.disabledColor,
+            ),
+          ),
         ),
       ],
     );
@@ -71,55 +103,55 @@ class ProfileView extends StatelessWidget {
       children: [
         _buildProfileItem(
           theme,
-          Icons.person_outline,
+          Icons.person_outline_rounded,
           'Edit Profile',
-          Icons.arrow_forward_ios,
+          null, // uses default arrow
           () {},
         ),
         _buildProfileItem(
           theme,
           Icons.notifications_outlined,
           'Notifications',
-          Icons.arrow_forward_ios,
+          null,
           () {},
         ),
         _buildProfileItem(
           theme,
           Icons.security_outlined,
           'Privacy & Security',
-          Icons.arrow_forward_ios,
+          null,
           () {},
         ),
         _buildProfileItem(
           theme,
-          isDarkMode ? Icons.light_mode : Icons.dark_mode,
+          isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
           'Dark Mode',
           Switch(
             value: isDarkMode,
             onChanged: onDarkModeToggle,
-            activeColor: AppColors.success,
+            activeColor: AppTheme.accent, // Lime Green toggle as requested
           ),
           () {},
         ),
         _buildProfileItem(
           theme,
-          Icons.help_outline,
+          Icons.help_outline_rounded,
           'Help & Support',
-          Icons.arrow_forward_ios,
-          () {},
-        ),
-        _buildProfileItem(
-          theme,
-          Icons.info_outline,
-          'About App',
-          Icons.arrow_forward_ios,
-          () {},
-        ),
-        _buildProfileItem(
-          theme,
-          Icons.logout,
-          'Logout',
           null,
+          () {},
+        ),
+        _buildProfileItem(
+          theme,
+          Icons.info_outline_rounded,
+          'About App',
+          null,
+          () {},
+        ),
+        _buildProfileItem(
+          theme,
+          Icons.logout_rounded,
+          'Logout',
+          const SizedBox(), // Empty widget so no arrow
           () {},
           isLogout: true,
         ),
@@ -135,41 +167,86 @@ class ProfileView extends StatelessWidget {
     VoidCallback onTap, {
     bool isLogout = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isLogout
-                ? Colors.red.withOpacity(0.1)
-                : theme.primaryColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: isLogout ? Colors.red : theme.primaryColor,
-            size: 24,
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: isLogout ? Colors.red : theme.primaryColor,
+    final Color accentBlue = theme.colorScheme.secondary;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+             border: Border.all(
+            color: isLogout 
+               ? Colors.red.withOpacity(0.15) 
+               : accentBlue.withOpacity(0.08),
+            width: 1.5,
           ),
         ),
-        trailing: trailing is Widget
-            ? trailing
-            : Icon(
-                Icons.arrow_forward_ios,
-                color: theme.disabledColor,
-                size: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(24),
+            splashColor: isLogout ? Colors.red.withOpacity(0.1) : accentBlue.withOpacity(0.1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isLogout
+                           ? [Colors.red.withOpacity(0.15), Colors.red.withOpacity(0.05)]
+                           : [accentBlue.withOpacity(0.15), accentBlue.withOpacity(0.05)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isLogout ? Colors.red : theme.colorScheme.secondary,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: isLogout ? Colors.red : theme.textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                  ),
+                  trailing is Widget
+                      ? trailing
+                      : Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: theme.disabledColor,
+                            size: 14,
+                          ),
+                        ),
+                ],
               ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        tileColor: theme.cardColor,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -35,12 +35,12 @@ class _DevicesViewState extends State<DevicesView> {
             _buildHeader(theme),
             Expanded(
               child: GridView.builder(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.72,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                  childAspectRatio: 0.82,
                 ),
                 itemCount: widget.controller.devices.length,
                 itemBuilder: (context, index) {
@@ -60,51 +60,43 @@ class _DevicesViewState extends State<DevicesView> {
 
   Widget _buildHeader(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
             onTap: widget.onBackPressed,
             child: Container(
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: theme.dividerColor),
+                border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
               child: Icon(
-                Icons.arrow_back_ios,
-                color: theme.disabledColor,
-                size: 16,
+                Icons.chevron_left_rounded,
+                color: theme.colorScheme.secondary,
+                size: 28,
               ),
             ),
           ),
           Text(
-            'My Devices',
+            'Connected Devices',
             style: TextStyle(
-              fontSize: 24,
-              color: theme.primaryColor,
-              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              color: theme.textTheme.bodyLarge?.color,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
-          GestureDetector(
-            onTap: () => widget.onDarkModeToggle(!widget.isDarkMode),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Icon(
-                widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                color: theme.disabledColor,
-              ),
-            ),
-          ),
+          const SizedBox(width: 44), // Spacer for balance
         ],
       ),
     );
@@ -117,81 +109,78 @@ class _DevicesViewState extends State<DevicesView> {
       });
     }
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: toggleDevice,
-        child: Container(
-          decoration: BoxDecoration(
-            color: device.isOn
-                ? AppColors.success.withOpacity(0.1)
-                : theme.cardColor,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: toggleDevice,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: device.isOn
+              ? theme.primaryColor.withOpacity(0.04)
+              : theme.cardColor,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: device.isOn 
+                ? theme.primaryColor.withOpacity(0.2) 
+                : theme.dividerColor.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: device.isOn 
+                  ? theme.primaryColor.withOpacity(0.1) 
+                  : Colors.black.withOpacity(0.03),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: device.isOn ? theme.primaryColor : theme.dividerColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  device.icon,
+                  color: device.isOn ? Colors.white : theme.disabledColor,
+                  size: 24,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                device.name,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: theme.textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    device.isOn ? 'Active' : 'Standby',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: device.isOn
+                          ? theme.primaryColor
+                          : theme.disabledColor,
+                    ),
+                  ),
+                  AnimatedToggleButton(
+                    isOn: device.isOn,
+                    onTap: toggleDevice,
+                  ),
+                ],
               ),
             ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: device.isOn
-                        ? AppColors.success.withOpacity(0.2)
-                        : theme.disabledColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    device.icon,
-                    color: theme.brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFF001F3F),
-                    size: 28,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  device.name,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Tap to control',
-                  style: TextStyle(fontSize: 12, color: theme.disabledColor),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      device.isOn ? 'ON' : 'OFF',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: device.isOn
-                            ? AppColors.success
-                            : theme.disabledColor,
-                      ),
-                    ),
-                    AnimatedToggleButton(
-                      isOn: device.isOn,
-                      onTap: toggleDevice,
-                    ),
-                  ],
-                ),
-              ],
-            ),
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../controllers/devices_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/room_controller.dart';
+import '../widgets/keyboard_popup.dart';
 import 'devices_view.dart';
 import 'profile_view.dart';
 import 'room_view.dart';
@@ -108,14 +109,14 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(35),
+          topRight: Radius.circular(35),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 30,
+            offset: const Offset(0, -10),
           ),
         ],
       ),
@@ -129,14 +130,14 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavItem(
-                    icon: Icons.home_outlined,
+                    icon: Icons.grid_view_rounded,
                     isSelected: _controller.selectedTab == 0,
                     onTap: () => setState(() => _controller.selectTab(0)),
                     theme: theme,
                   ),
-                  const SizedBox(width: 60),
+                  const SizedBox(width: 80),
                   _buildNavItem(
-                    icon: Icons.person_outline,
+                    icon: Icons.person_rounded,
                     isSelected: _controller.selectedTab == 2,
                     onTap: () => setState(() => _controller.selectTab(2)),
                     theme: theme,
@@ -146,30 +147,40 @@ class _HomePageState extends State<HomePage> {
               Positioned(
                 left: 0,
                 right: 0,
-                top: -25,
+                top: -30,
                 child: Center(
                   child: GestureDetector(
-                    onTap: () => setState(() => _controller.selectTab(1)),
+                    onTap: () {
+                      showGeneralDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        barrierLabel: "Keyboard",
+                        pageBuilder: (context, _, __) => const GazeKeyboardPopup(),
+                      );
+                    },
                     child: Container(
-                      width: 65,
-                      height: 65,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
-                        color: theme.cardColor,
+                        gradient: LinearGradient(
+                          colors: [theme.primaryColor, theme.colorScheme.secondary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 15,
+                            color: theme.primaryColor.withOpacity(0.3),
+                            blurRadius: 20,
                             spreadRadius: 2,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.mic_none,
-                        color: _controller.selectedTab == 1
-                            ? theme.primaryColor
-                            : theme.disabledColor,
-                        size: 28,
+                      child: const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 32,
                       ),
                     ),
                   ),

@@ -4,6 +4,7 @@ import '../routes/app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/auth_card.dart';
+import 'login_screen.dart'; // For TechGridPainter
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -12,14 +13,28 @@ class ForgotPasswordScreen extends StatefulWidget {
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
   bool _emailSent = false;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 700),
+    )..forward();
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+  }
+
   @override
   void dispose() {
+    _fadeController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -46,25 +61,66 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AuthCard(
-                child: _emailSent ? _buildSuccessState() : _buildFormState(),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background Tech Grid
+          Positioned.fill(
+            child: CustomPaint(
+              painter: TechGridPainter(
+                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
               ),
             ),
           ),
-        ),
+          
+          // The Premium Emerald Light Flare Orb
+          Positioned(
+            top: -150,
+            left: MediaQuery.of(context).size.width / 2 - 180,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: AuthCard(
+                      child: _emailSent ? _buildSuccessState(isDark) : _buildFormState(theme, isDark),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFormState() {
+  Widget _buildFormState(ThemeData theme, bool isDark) {
+    final textColorPrimary = isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight;
+    final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
     return Form(
       key: _formKey,
       child: Column(
@@ -75,9 +131,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                color: AppTheme.textMuted,
+                color: textColorSecondary,
                 size: 18,
               ),
             ),
@@ -106,22 +162,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
 
           // Header
-          const Text(
+          Text(
             'Reset Password',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppTheme.textPrimary,
+              color: textColorPrimary,
               fontSize: 26,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Enter your email and we'll send you a link to reset your password.",
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppTheme.textSecondary,
+              color: textColorSecondary,
               fontSize: 14,
               height: 1.5,
             ),
@@ -165,7 +221,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildSuccessState() {
+  Widget _buildSuccessState(bool isDark) {
+    final textColorPrimary = isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight;
+    final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -178,25 +237,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           margin: const EdgeInsets.only(bottom: 24),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFF22C55E).withOpacity(0.12),
+            color: const Color(0xFF10B981).withOpacity(0.12),
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF22C55E).withOpacity(0.3),
+              color: const Color(0xFF10B981).withOpacity(0.3),
               width: 1.5,
             ),
           ),
           child: const Icon(
             Icons.check_rounded,
-            color: Color(0xFF22C55E),
+            color: Color(0xFF10B981),
             size: 32,
           ),
         ),
 
-        const Text(
+        Text(
           'Check your inbox',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppTheme.textPrimary,
+            color: textColorPrimary,
             fontSize: 24,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
@@ -206,8 +265,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Text(
           "We've sent a password reset link to\n${_emailController.text}",
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppTheme.textSecondary,
+          style: TextStyle(
+            color: textColorSecondary,
             fontSize: 14,
             height: 1.6,
           ),
@@ -224,11 +283,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
         GestureDetector(
           onTap: () => setState(() => _emailSent = false),
-          child: const Text(
+          child: Text(
             'Resend email',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppTheme.textMuted,
+              color: textColorSecondary.withOpacity(0.7),
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

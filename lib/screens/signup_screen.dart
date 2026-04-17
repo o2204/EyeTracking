@@ -4,6 +4,7 @@ import '../routes/app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/auth_card.dart';
+import 'login_screen.dart'; // For TechGridPainter
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -12,15 +13,29 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 700),
+    )..forward();
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+  }
+
   @override
   void dispose() {
+    _fadeController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -56,125 +71,166 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final textColorPrimary = isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight;
+    final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AuthCard(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Back button
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: AppTheme.textMuted,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background Tech Grid
+          Positioned.fill(
+            child: CustomPaint(
+              painter: TechGridPainter(
+                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+              ),
+            ),
+          ),
+          
+          // The Premium Emerald Light Flare Orb
+          Positioned(
+            top: -150,
+            left: MediaQuery.of(context).size.width / 2 - 180,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-                      // Header
-                      const Text(
-                        'Create account',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Join us and get started today',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Email
-                      CustomTextField(
-                        label: 'Email',
-                        hintText: 'you@example.com',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: _validateEmail,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Password
-                      CustomTextField(
-                        label: 'Password',
-                        hintText: '••••••••',
-                        controller: _passwordController,
-                        isPassword: true,
-                        validator: _validatePassword,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Confirm Password
-                      CustomTextField(
-                        label: 'Confirm Password',
-                        hintText: '••••••••',
-                        controller: _confirmPasswordController,
-                        isPassword: true,
-                        validator: _validateConfirmPassword,
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Sign Up Button
-                      PrimaryButton(
-                        label: 'Sign Up',
-                        onPressed: _handleSignUp,
-                        isLoading: _isLoading,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Sign in link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Already have an account? ',
-                            style: TextStyle(
-                                color: AppTheme.textSecondary, fontSize: 14),
-                          ),
-                          GestureDetector(
-                            onTap: () =>
-                                Navigator.pushReplacementNamed(
-                                    context, AppRoutes.login),
-                            child: const Text(
-                              'Sign in',
-                              style: TextStyle(
-                                color: AppTheme.textLink,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: AuthCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Back button
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: textColorSecondary,
+                                  size: 18,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+
+                            // Header
+                            Text(
+                              'Create account',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textColorPrimary,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Join us and get started today',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textColorSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+
+                            // Email
+                            CustomTextField(
+                              label: 'Email',
+                              hintText: 'you@example.com',
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: _validateEmail,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Password
+                            CustomTextField(
+                              label: 'Password',
+                              hintText: '••••••••',
+                              controller: _passwordController,
+                              isPassword: true,
+                              validator: _validatePassword,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Confirm Password
+                            CustomTextField(
+                              label: 'Confirm Password',
+                              hintText: '••••••••',
+                              controller: _confirmPasswordController,
+                              isPassword: true,
+                              validator: _validateConfirmPassword,
+                            ),
+                            const SizedBox(height: 28),
+
+                            // Sign Up Button
+                            PrimaryButton(
+                              label: 'Sign Up',
+                              onPressed: _handleSignUp,
+                              isLoading: _isLoading,
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Sign in link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Already have an account? ',
+                                  style: TextStyle(
+                                      color: textColorSecondary, fontSize: 14),
+                                ),
+                                GestureDetector(
+                                  onTap: () =>
+                                      Navigator.pushReplacementNamed(
+                                          context, AppRoutes.login),
+                                  child: const Text(
+                                    'Sign in',
+                                    style: TextStyle(
+                                      color: AppTheme.textLink,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

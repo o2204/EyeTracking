@@ -4,6 +4,7 @@ import '../routes/app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/auth_card.dart';
+import 'login_screen.dart'; // For TechGridPainter
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -12,14 +13,28 @@ class AdminLoginScreen extends StatefulWidget {
   State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> {
+class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 700),
+    )..forward();
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+  }
+
   @override
   void dispose() {
+    _fadeController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -48,170 +63,211 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: AuthCard(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Back
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: AppTheme.textMuted,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final textColorPrimary = isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight;
+    final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
 
-                      // Admin badge
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: AppTheme.primary.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.shield_outlined,
-                                color: AppTheme.primaryLight,
-                                size: 14,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'Admin Access',
-                                style: TextStyle(
-                                  color: AppTheme.primaryLight,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background Tech Grid
+          Positioned.fill(
+            child: CustomPaint(
+              painter: TechGridPainter(
+                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+              ),
+            ),
+          ),
+          
+          // The Premium Emerald Light Flare Orb
+          Positioned(
+            top: -150,
+            left: MediaQuery.of(context).size.width / 2 - 180,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: AuthCard(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Back
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: textColorSecondary,
+                                  size: 18,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Header
-                      const Text(
-                        'Admin Login',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Restricted to authorized personnel only',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Email
-                      CustomTextField(
-                        label: 'Admin Email',
-                        hintText: 'admin@example.com',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: _validateEmail,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Password label + Forgot
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Password',
-                            style: TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                                context, AppRoutes.forgotPassword),
-                            child: const Text(
-                              'Forgot password?',
-                              style: TextStyle(
-                                color: AppTheme.textLink,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(height: 16),
+
+                            // Admin badge
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppTheme.primary.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.shield_outlined,
+                                      color: AppTheme.primary,
+                                      size: 14,
+                                    ),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Admin Access',
+                                      style: TextStyle(
+                                        color: AppTheme.primary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
+                            const SizedBox(height: 18),
 
-                      CustomTextField(
-                        label: '',
-                        hintText: '••••••••',
-                        controller: _passwordController,
-                        isPassword: true,
-                        validator: _validatePassword,
-                      ),
-                      const SizedBox(height: 28),
+                            // Header
+                            Text(
+                              'Admin Login',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textColorPrimary,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Restricted to authorized personnel only',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textColorSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
 
-                      // Login as Admin Button
-                      PrimaryButton(
-                        label: 'Login as Admin',
-                        onPressed: _handleAdminLogin,
-                        isLoading: _isLoading,
-                      ),
-                      const SizedBox(height: 24),
+                            // Email
+                            CustomTextField(
+                              label: 'Admin Email',
+                              hintText: 'admin@example.com',
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: _validateEmail,
+                            ),
+                            const SizedBox(height: 20),
 
-                      // Back to user login
-                      GestureDetector(
-                        onTap: () =>
-                            Navigator.pushReplacementNamed(
-                                context, AppRoutes.login),
-                        child: const Text(
-                          '← Back to User Login',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
+                            // Password label + Forgot
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Password',
+                                  style: TextStyle(
+                                    color: textColorPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Navigator.pushNamed(
+                                      context, AppRoutes.forgotPassword),
+                                  child: const Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      color: AppTheme.textLink,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+
+                            CustomTextField(
+                              label: '',
+                              hintText: '••••••••',
+                              controller: _passwordController,
+                              isPassword: true,
+                              validator: _validatePassword,
+                            ),
+                            const SizedBox(height: 28),
+
+                            // Login as Admin Button
+                            PrimaryButton(
+                              label: 'Login as Admin',
+                              onPressed: _handleAdminLogin,
+                              isLoading: _isLoading,
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Back to user login
+                            GestureDetector(
+                              onTap: () =>
+                                  Navigator.pushReplacementNamed(
+                                      context, AppRoutes.login),
+                              child: Text(
+                                '← Back to User Login',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: textColorSecondary.withOpacity(0.7),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
