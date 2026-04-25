@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -14,6 +15,9 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   String text = "";
   final FlutterTts tts = FlutterTts();
   bool isShifted = false;
+  bool _isRecording = false;
+  int _recordSeconds = 0;
+  Timer? _recordTimer;
 
   final List<List<String>> qwertyRows = [
     ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -27,6 +31,13 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
     _initTts();
   }
 
+  @override
+  void dispose() {
+    _recordTimer?.cancel();
+    tts.stop();
+    super.dispose();
+  }
+
   Future<void> _initTts() async {
     await tts.setLanguage("en-US");
     await tts.setPitch(1.0);
@@ -34,9 +45,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   }
 
   void speak() async {
-    if (text.isNotEmpty) {
-      await tts.speak(text);
-    }
+    if (text.isNotEmpty) await tts.speak(text);
   }
 
   void stopSpeech() async {
@@ -78,6 +87,287 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
     });
   }
 
+  // ─── Audio Upload / Record Sheet ───────────────────────────
+  void _showAudioSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 40,
+                  offset: const Offset(0, -10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Title
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.audiotrack_rounded, color: AppTheme.primary, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Audio Input', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                        Text('Upload a file or record your voice', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // ── Upload File ──
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _simulateFileUpload();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withOpacity(0.07),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.accent.withOpacity(0.25)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.upload_file_rounded, color: AppTheme.accent, size: 28),
+                        SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Upload Audio File', style: TextStyle(color: AppTheme.accent, fontSize: 15, fontWeight: FontWeight.w700)),
+                            Text('MP3, WAV, M4A supported', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          ],
+                        ),
+                        Spacer(),
+                        Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.accent, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── Record ──
+                GestureDetector(
+                  onTap: () {
+                    if (!_isRecording) {
+                      setModalState(() {});
+                      _startRecording(setModalState);
+                    } else {
+                      _stopRecording();
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: _isRecording
+                          ? Colors.redAccent.withOpacity(0.12)
+                          : AppTheme.primary.withOpacity(0.07),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _isRecording
+                            ? Colors.redAccent.withOpacity(0.4)
+                            : AppTheme.primary.withOpacity(0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isRecording ? Icons.stop_circle_rounded : Icons.mic_rounded,
+                          color: _isRecording ? Colors.redAccent : AppTheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isRecording ? 'Stop Recording' : 'Record Voice',
+                              style: TextStyle(
+                                color: _isRecording ? Colors.redAccent : AppTheme.primary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              _isRecording
+                                  ? '${_formatTime(_recordSeconds)} — tap to stop'
+                                  : 'Tap to start recording',
+                              style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        if (_isRecording)
+                          _buildRecordingDot(),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecordingDot() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.4, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      builder: (_, val, __) => Opacity(
+        opacity: val,
+        child: Container(
+          width: 12,
+          height: 12,
+          decoration: const BoxDecoration(
+            color: Colors.redAccent,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _startRecording(StateSetter setModalState) {
+    setState(() => _isRecording = true);
+    _recordSeconds = 0;
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() => _recordSeconds++);
+        setModalState(() {});
+      }
+    });
+  }
+
+  void _stopRecording() {
+    _recordTimer?.cancel();
+    setState(() => _isRecording = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ Recording saved (${_formatTime(_recordSeconds)})'),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _simulateFileUpload() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📁 Audio file uploaded successfully'),
+        backgroundColor: AppTheme.accent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  String _formatTime(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  // ─── Emergency SOS ────────────────────────────────────────
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text('Emergency Alert', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: const Text(
+          'This will immediately notify the admin and medical staff.\n\nAre you sure?',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _triggerSOS();
+            },
+            child: const Text(
+              '🚨 SEND SOS',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _triggerSOS() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.sos_rounded, color: Colors.white),
+            SizedBox(width: 10),
+            Text('🚨 Emergency Alert Sent! Help is on the way.',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ],
+        ),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  // ─── Build ────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -101,6 +391,8 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
             Expanded(child: _buildQwertyGrid(theme)),
             const SizedBox(height: 12),
             _buildControlRow(theme),
+            const SizedBox(height: 10),
+            _buildSpecialActionsRow(theme),
           ],
         ),
       ),
@@ -169,7 +461,12 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
             return Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(4),
-                child: _buildKeyButton(isShifted ? key.toUpperCase() : key, theme.cardColor, theme.textTheme.bodyLarge?.color?.withOpacity(0.8), () => addLetter(key)),
+                child: _buildKeyButton(
+                  isShifted ? key.toUpperCase() : key,
+                  theme.cardColor,
+                  theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+                  () => addLetter(key),
+                ),
               ),
             );
           }).toList(),
@@ -181,15 +478,18 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   Widget _buildControlRow(ThemeData theme) {
     return Row(
       children: [
-        _buildToolbarItem("HOME", theme.colorScheme.secondary, Icons.home_rounded, () => Navigator.pop(context), flex: 2),
-        _buildToolbarItem("SHIFT", theme.primaryColor, Icons.upload_rounded, () => setState(() => isShifted = !isShifted), flex: 1, isActive: isShifted),
+        _buildToolbarItem("HOME", theme.colorScheme.secondary, Icons.home_rounded,
+            () => Navigator.pop(context), flex: 2),
+        _buildToolbarItem("SHIFT", theme.primaryColor, Icons.upload_rounded,
+            () => setState(() => isShifted = !isShifted), flex: 1, isActive: isShifted),
         _buildToolbarItem("PHRASE", theme.colorScheme.secondary, Icons.favorite_rounded, () {}, flex: 2),
         _buildToolbarItem("TOOLS", theme.primaryColor, Icons.settings_rounded, () {}, flex: 1),
         Expanded(
           flex: 4,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _buildKeyButton("Space", Colors.blueGrey.withOpacity(0.2), theme.disabledColor, () => addLetter(" ")),
+            child: _buildKeyButton(
+                "Space", Colors.blueGrey.withOpacity(0.2), theme.disabledColor, () => addLetter(" ")),
           ),
         ),
         _buildToolbarItem("123", theme.primaryColor, Icons.numbers_rounded, () {}, flex: 2),
@@ -198,7 +498,130 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
     );
   }
 
-  Widget _buildToolbarItem(String label, Color color, IconData? icon, VoidCallback onTap, {int flex = 1, bool isActive = false}) {
+  // ─── NEW: Special Actions Row ─────────────────────────────
+  Widget _buildSpecialActionsRow(ThemeData theme) {
+    return Row(
+      children: [
+        // Audio Upload / Record button
+        Expanded(
+          flex: 3,
+          child: GestureDetector(
+            onTap: _showAudioSheet,
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(0.15),
+                    AppTheme.accent.withOpacity(0.15),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _isRecording
+                      ? Colors.redAccent.withOpacity(0.7)
+                      : AppTheme.primary.withOpacity(0.4),
+                  width: 1.8,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _isRecording ? Icons.fiber_manual_record : Icons.mic_rounded,
+                    color: _isRecording ? Colors.redAccent : AppTheme.primary,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isRecording ? '● RECORDING' : 'AUDIO',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: _isRecording ? Colors.redAccent : AppTheme.primary,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        _isRecording ? _formatTime(_recordSeconds) : 'Upload or Record',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _isRecording
+                              ? Colors.redAccent.withOpacity(0.8)
+                              : AppTheme.primary.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Emergency / SOS button
+        Expanded(
+          flex: 2,
+          child: GestureDetector(
+            onTap: _showEmergencyDialog,
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.redAccent.withOpacity(0.2),
+                    Colors.red.shade900.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.redAccent.withOpacity(0.15),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.sos_rounded, color: Colors.redAccent, size: 26),
+                  SizedBox(width: 8),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EMERGENCY',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.redAccent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        'Send SOS Alert',
+                        style: TextStyle(fontSize: 10, color: Colors.redAccent, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolbarItem(String label, Color color, IconData? icon, VoidCallback onTap,
+      {int flex = 1, bool isActive = false}) {
     return Expanded(
       flex: flex,
       child: Padding(
@@ -241,21 +664,13 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withOpacity(0.05)),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
           ],
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: textColor),
         ),
       ),
     );

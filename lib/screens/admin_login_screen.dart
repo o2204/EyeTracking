@@ -44,7 +44,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
+      }
     }
   }
 
