@@ -2,41 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors (Eye Intelligence Emerald & Blue)
-  static const Color primary = Color(0xFF10B981); // Emerald Green (Matched to Image)
-  static const Color accent = Color(0xFF3B82F6); // Premium Blue
-  static const Color primaryHover = Color(0xFF059669); // Darker Emerald
-  static const Color primaryLight = Color(0xFFD1FAE5); // Light Emerald
-
-  // Light Theme Colors (Premium Clean)
-  static const Color backgroundLight = Color(0xFFFFFFFF);
-  static const Color surfaceLight = Color(0xFFFAFAFA);
-  static const Color surfaceVariantLight = Color(0xFFF3F4F6);
-  static const Color cardBackgroundLight = Color(0xFFFFFFFF);
-  static const Color inputFillLight = Color(0xFFF9FAFB);
-  static const Color inputBorderLight = Color(0xFFE5E7EB);
+  // Brand Colors
+  static const Color primary = Color(0xFF00C897); // Primary Accent (Glow)
+  static const Color accent = Color(0xFF8C2A0A); // Secondary Accent (Subtle Warm)
+  static const Color primaryHover = Color(0xFF00A67E); 
   
-  // Dark Theme Colors
-  static const Color backgroundDark = Color(0xFF0F172A);
-  static const Color surfaceDark = Color(0xFF1E293B);
-  static const Color surfaceVariantDark = Color(0xFF334155);
-  static const Color cardBackgroundDark = Color(0xFF1E293B);
-  static const Color inputFillDark = Color(0xFF0F172A);
-  static const Color inputBorderDark = Color(0xFF334155);
+  // Background & Surface
+  static const Color backgroundPrimary = Color(0xFF0A0F1C);
+  static const Color backgroundSecondary = Color(0xFF121A2C);
+  static const Color cardBackground = Color(0xFF111827);
+  static const Color inputFill = Color(0xFF0A0F1C);
+  static const Color inputBorder = Color(0xFF1F2937);
 
   // Text Colors
-  static const Color textPrimaryLight = Color(0xFF1E293B); // Dark Slate (Matched to Image)
-  static const Color textSecondaryLight = Color(0xFF64748B);
-  static const Color textPrimaryDark = Color(0xFFF9FAFB);
-  static const Color textSecondaryDark = Color(0xFF9CA3AF);
-  
-  static const Color textLink = Color(0xFF10B981);
+  static const Color textPrimary = Color(0xFFE5E7EB);
+  static const Color textSecondary = Color(0xFF9CA3AF);
   static const Color textError = Color(0xFFEF4444);
+  static const Color textLink = primary;
 
-  // Premium Shadows
+  // Legacy Aliases (Enforces Dark Theme globally across older screens without breaking)
+  static const Color backgroundDark = backgroundPrimary;
+  static const Color backgroundLight = backgroundPrimary;
+  static const Color cardBackgroundDark = cardBackground;
+  static const Color cardBackgroundLight = cardBackground;
+  static const Color inputFillDark = inputFill;
+  static const Color inputFillLight = inputFill;
+  static const Color inputBorderDark = inputBorder;
+  static const Color inputBorderLight = inputBorder;
+  static const Color textPrimaryDark = textPrimary;
+  static const Color textPrimaryLight = textPrimary;
+  static const Color textSecondaryDark = textSecondary;
+  static const Color textSecondaryLight = textSecondary;
+
+  // Shadows
   static List<BoxShadow> get softShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
+      color: Colors.black.withValues(alpha: 0.4),
       blurRadius: 20,
       offset: const Offset(0, 10),
     ),
@@ -44,57 +45,58 @@ class AppTheme {
 
   static List<BoxShadow> get premiumShadow => [
     BoxShadow(
-      color: primary.withOpacity(0.08),
+      color: primary.withValues(alpha: 0.15),
       blurRadius: 30,
-      offset: const Offset(0, 15),
+      offset: const Offset(0, 10),
     ),
   ];
 
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      primaryColor: primary,
-      scaffoldBackgroundColor: backgroundLight,
-      cardColor: cardBackgroundLight,
-      dividerColor: inputBorderLight,
-      disabledColor: textSecondaryLight,
-      colorScheme: const ColorScheme.light(
-        primary: primary,
-        secondary: accent,
-        surface: surfaceLight,
-        error: textError,
-      ),
-      textTheme: GoogleFonts.outfitTextTheme(
-        ThemeData.light().textTheme,
-      ).apply(
-        bodyColor: textPrimaryLight,
-        displayColor: textPrimaryLight,
-      ),
-    );
-  }
+  static List<BoxShadow> get cardGlow => [
+    BoxShadow(
+      color: primary.withValues(alpha: 0.08),
+      blurRadius: 24,
+      spreadRadius: 0,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  // Gradients
+  static const LinearGradient globalBackgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      backgroundPrimary,
+      backgroundSecondary,
+    ],
+  );
+
+  static const LinearGradient darkBackgroundGradient = globalBackgroundGradient;
+  static const LinearGradient lightBackgroundGradient = globalBackgroundGradient;
 
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: primary,
-      scaffoldBackgroundColor: backgroundDark,
-      cardColor: cardBackgroundDark,
-      dividerColor: inputBorderDark,
-      disabledColor: textSecondaryDark,
+      scaffoldBackgroundColor: backgroundPrimary,
+      cardColor: cardBackground,
+      dividerColor: inputBorder,
+      disabledColor: textSecondary,
       colorScheme: const ColorScheme.dark(
         primary: primary,
         secondary: accent,
-        surface: surfaceDark,
+        surface: cardBackground,
         error: textError,
       ),
       textTheme: GoogleFonts.outfitTextTheme(
         ThemeData.dark().textTheme,
       ).apply(
-        bodyColor: textPrimaryDark,
-        displayColor: textPrimaryDark,
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
       ),
     );
   }
+
+  // To prevent light mode issues, enforce dark theme even if requested
+  static ThemeData get lightTheme => darkTheme;
 }

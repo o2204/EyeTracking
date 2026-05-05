@@ -65,14 +65,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.darkBackgroundGradient
+              : AppTheme.lightBackgroundGradient,
+        ),
+        child: Stack(
         children: [
           // Background Tech Grid
           Positioned.fill(
             child: CustomPaint(
               painter: TechGridPainter(
-                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+                color: AppTheme.primary.withValues(alpha: isDark ? 0.15 : 0.05),
               ),
             ),
           ),
@@ -88,7 +93,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    AppTheme.primary.withValues(alpha: isDark ? 0.20 : 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -113,6 +118,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -147,10 +153,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
             margin: const EdgeInsets.only(bottom: 20),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
+              color: AppTheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppTheme.primary.withOpacity(0.2),
+                color: AppTheme.primary.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -237,10 +243,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
           margin: const EdgeInsets.only(bottom: 24),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withOpacity(0.12),
+            color: const Color(0xFF10B981).withValues(alpha: 0.12),
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF10B981).withOpacity(0.3),
+              color: const Color(0xFF10B981).withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
@@ -287,7 +293,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
             'Resend email',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: textColorSecondary.withOpacity(0.7),
+              color: textColorSecondary.withValues(alpha: 0.7),
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

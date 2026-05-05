@@ -70,10 +70,10 @@ class _MascotCharacterState extends State<MascotCharacter>
               decoration: BoxDecoration(
                 color: bubbleBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.primary.withOpacity(0.28)),
+                border: Border.all(color: AppTheme.primary.withValues(alpha: 0.28)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.28 : 0.07),
+                    color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -127,7 +127,7 @@ class _TrianglePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = AppTheme.primary.withOpacity(0.28)
+        ..color = AppTheme.primary.withValues(alpha: 0.28)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0,
     );
@@ -228,7 +228,6 @@ class _MascotPainter extends CustomPainter {
   // ─── Arms (Interaction) ──────────────────────────────────────────────────
   void _drawArms(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2 + 10);
-    const armWidth = 8.0;
     
     // Left Arm (Hider)
     canvas.save();

@@ -1,8 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../theme/app_theme.dart';
+
+bool isTtsSupported() {
+  return !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+}
 
 class GazeKeyboardPopup extends StatefulWidget {
   const GazeKeyboardPopup({super.key});
@@ -13,7 +19,7 @@ class GazeKeyboardPopup extends StatefulWidget {
 
 class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   String text = "";
-  final FlutterTts tts = FlutterTts();
+  FlutterTts? tts;
   bool isShifted = false;
   bool _isRecording = false;
   int _recordSeconds = 0;
@@ -34,22 +40,25 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   @override
   void dispose() {
     _recordTimer?.cancel();
-    tts.stop();
+    tts?.stop();
     super.dispose();
   }
 
   Future<void> _initTts() async {
-    await tts.setLanguage("en-US");
-    await tts.setPitch(1.0);
-    await tts.setSpeechRate(0.5);
+    if (isTtsSupported()) {
+      tts = FlutterTts();
+      await tts?.setLanguage("en-US");
+      await tts?.setPitch(1.0);
+      await tts?.setSpeechRate(0.5);
+    }
   }
 
   void speak() async {
-    if (text.isNotEmpty) await tts.speak(text);
+    if (text.isNotEmpty) await tts?.speak(text);
   }
 
   void stopSpeech() async {
-    await tts.stop();
+    await tts?.stop();
   }
 
   void addLetter(String letter) {
@@ -102,7 +111,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 40,
                   offset: const Offset(0, -10),
                 ),
@@ -117,7 +126,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -128,7 +137,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.12),
+                        color: AppTheme.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.audiotrack_rounded, color: AppTheme.primary, size: 22),
@@ -155,9 +164,9 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: AppTheme.accent.withOpacity(0.07),
+                      color: AppTheme.accent.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.accent.withOpacity(0.25)),
+                      border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
                     ),
                     child: const Row(
                       children: [
@@ -194,13 +203,13 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: _isRecording
-                          ? Colors.redAccent.withOpacity(0.12)
-                          : AppTheme.primary.withOpacity(0.07),
+                          ? Colors.redAccent.withValues(alpha: 0.12)
+                          : AppTheme.primary.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: _isRecording
-                            ? Colors.redAccent.withOpacity(0.4)
-                            : AppTheme.primary.withOpacity(0.25),
+                            ? Colors.redAccent.withValues(alpha: 0.4)
+                            : AppTheme.primary.withValues(alpha: 0.25),
                       ),
                     ),
                     child: Row(
@@ -308,7 +317,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   void _showEmergencyDialog() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -378,7 +387,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
       child: Container(
         height: size.height,
         width: size.width,
-        color: theme.scaffoldBackgroundColor.withOpacity(0.95),
+        color: theme.scaffoldBackgroundColor.withValues(alpha: 0.95),
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -407,7 +416,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.3), width: 2),
+        border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: 0.3), width: 2),
       ),
       alignment: Alignment.centerLeft,
       child: Text(
@@ -437,17 +446,17 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   Widget _buildToolbarRow(ThemeData theme) {
     return Row(
       children: [
-        _buildToolbarItem("SPEAK", theme.primaryColor, Icons.volume_up_rounded, speak, flex: 2),
-        _buildToolbarItem("STOP", Colors.deepPurpleAccent, Icons.stop_rounded, stopSpeech, flex: 2),
+        _buildToolbarItem("SPEAK", AppTheme.primary, Icons.volume_up_rounded, speak, flex: 2),
+        _buildToolbarItem("STOP", AppTheme.accent, Icons.stop_rounded, stopSpeech, flex: 2),
         const SizedBox(width: 8),
-        _buildToolbarItem("Wrd ←", Colors.blueGrey, null, () {}),
-        _buildToolbarItem("Wrd →", Colors.blueGrey, null, () {}),
-        _buildToolbarItem("Snt ←", Colors.blueGrey, null, () {}),
-        _buildToolbarItem("Snt →", Colors.blueGrey, null, () {}),
+        _buildToolbarItem("Wrd ←", AppTheme.textSecondary, null, () {}),
+        _buildToolbarItem("Wrd →", AppTheme.textSecondary, null, () {}),
+        _buildToolbarItem("Snt ←", AppTheme.textSecondary, null, () {}),
+        _buildToolbarItem("Snt →", AppTheme.textSecondary, null, () {}),
         const SizedBox(width: 8),
-        _buildToolbarItem("CLEAR", Colors.redAccent, Icons.clear_all_rounded, clearText, flex: 1),
-        _buildToolbarItem("DEL WRD", Colors.redAccent, Icons.delete_sweep_rounded, deleteWord, flex: 2),
-        _buildToolbarItem("BKSP", Colors.red, Icons.backspace_rounded, backspace, flex: 2),
+        _buildToolbarItem("CLEAR", AppTheme.textError, Icons.clear_all_rounded, clearText, flex: 1),
+        _buildToolbarItem("DEL WRD", AppTheme.textError, Icons.delete_sweep_rounded, deleteWord, flex: 2),
+        _buildToolbarItem("BKSP", AppTheme.textError, Icons.backspace_rounded, backspace, flex: 2),
       ],
     );
   }
@@ -464,7 +473,7 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                 child: _buildKeyButton(
                   isShifted ? key.toUpperCase() : key,
                   theme.cardColor,
-                  theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+                  theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
                   () => addLetter(key),
                 ),
               ),
@@ -478,22 +487,22 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
   Widget _buildControlRow(ThemeData theme) {
     return Row(
       children: [
-        _buildToolbarItem("HOME", theme.colorScheme.secondary, Icons.home_rounded,
+        _buildToolbarItem("HOME", AppTheme.textSecondary, Icons.home_rounded,
             () => Navigator.pop(context), flex: 2),
-        _buildToolbarItem("SHIFT", theme.primaryColor, Icons.upload_rounded,
+        _buildToolbarItem("SHIFT", AppTheme.primary, Icons.upload_rounded,
             () => setState(() => isShifted = !isShifted), flex: 1, isActive: isShifted),
-        _buildToolbarItem("PHRASE", theme.colorScheme.secondary, Icons.favorite_rounded, () {}, flex: 2),
-        _buildToolbarItem("TOOLS", theme.primaryColor, Icons.settings_rounded, () {}, flex: 1),
+        _buildToolbarItem("PHRASE", AppTheme.textSecondary, Icons.favorite_rounded, () {}, flex: 2),
+        _buildToolbarItem("TOOLS", AppTheme.primary, Icons.settings_rounded, () {}, flex: 1),
         Expanded(
           flex: 4,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: _buildKeyButton(
-                "Space", Colors.blueGrey.withOpacity(0.2), theme.disabledColor, () => addLetter(" ")),
+                "Space", AppTheme.cardBackground, theme.disabledColor, () => addLetter(" ")),
           ),
         ),
-        _buildToolbarItem("123", theme.primaryColor, Icons.numbers_rounded, () {}, flex: 2),
-        _buildToolbarItem("PAUSE", theme.colorScheme.secondary, Icons.pause_rounded, () {}, flex: 2),
+        _buildToolbarItem("123", AppTheme.primary, Icons.numbers_rounded, () {}, flex: 2),
+        _buildToolbarItem("PAUSE", AppTheme.textSecondary, Icons.pause_rounded, () {}, flex: 2),
       ],
     );
   }
@@ -512,15 +521,15 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(0.15),
-                    AppTheme.accent.withOpacity(0.15),
+                    AppTheme.primary.withValues(alpha: 0.15),
+                    AppTheme.accent.withValues(alpha: 0.15),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _isRecording
-                      ? Colors.redAccent.withOpacity(0.7)
-                      : AppTheme.primary.withOpacity(0.4),
+                      ? Colors.redAccent.withValues(alpha: 0.7)
+                      : AppTheme.primary.withValues(alpha: 0.4),
                   width: 1.8,
                 ),
               ),
@@ -551,8 +560,8 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
                         style: TextStyle(
                           fontSize: 10,
                           color: _isRecording
-                              ? Colors.redAccent.withOpacity(0.8)
-                              : AppTheme.primary.withOpacity(0.7),
+                              ? Colors.redAccent.withValues(alpha: 0.8)
+                              : AppTheme.primary.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -573,15 +582,15 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.redAccent.withOpacity(0.2),
-                    Colors.red.shade900.withOpacity(0.2),
+                    Colors.redAccent.withValues(alpha: 0.2),
+                    Colors.red.shade900.withValues(alpha: 0.2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.6), width: 2),
+                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.6), width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.redAccent.withOpacity(0.15),
+                    color: Colors.redAccent.withValues(alpha: 0.15),
                     blurRadius: 16,
                     spreadRadius: 1,
                   ),
@@ -631,9 +640,9 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
           child: Container(
             height: 60,
             decoration: BoxDecoration(
-              color: isActive ? color : color.withOpacity(0.15),
+              color: isActive ? color : color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+              border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -662,9 +671,9 @@ class _GazeKeyboardPopupState extends State<GazeKeyboardPopup> {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2)),
           ],
         ),
         alignment: Alignment.center,

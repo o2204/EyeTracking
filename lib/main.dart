@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'routes/app_routes.dart';
+import 'services/theme_service.dart';
 
 // Global notifier so any screen can toggle the theme
-final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier(ThemeMode.dark);
+late final ValueNotifier<ThemeMode> themeModeNotifier;
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final initialTheme = await ThemeService.getSavedTheme();
+  themeModeNotifier = ValueNotifier(initialTheme);
+  
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

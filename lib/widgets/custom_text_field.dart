@@ -59,16 +59,23 @@ class _CustomTextFieldState extends State<CustomTextField> {
         Focus(
           onFocusChange: (focused) => setState(() => _isFocused = focused),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: _isFocused && !isDark
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: _isFocused
                   ? [
                       BoxShadow(
-                        color: AppTheme.primary.withOpacity(0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      )
+                        color: AppTheme.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.08),
+                          blurRadius: 30,
+                          spreadRadius: 3,
+                        ),
                     ]
                   : [],
             ),
@@ -88,36 +95,36 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   fontSize: 15,
                 ),
                 filled: true,
-                fillColor: _isFocused 
-                    ? (isDark ? theme.cardColor : Colors.white) 
+                fillColor: _isFocused
+                    ? (isDark ? theme.cardColor : Colors.white)
                     : fillColor,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 16,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
                     color: borderColor,
                     width: 1.5,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
                     color: AppTheme.primary,
                     width: 2.0,
                   ),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
                     color: AppTheme.textError,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
                     color: AppTheme.textError,
                     width: 2.0,
@@ -133,7 +140,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                           _obscureText
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: hintColor,
+                          color: _isFocused ? AppTheme.primary : hintColor,
                           size: 20,
                         ),
                         onPressed: () {

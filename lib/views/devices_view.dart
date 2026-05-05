@@ -27,32 +27,52 @@ class _DevicesViewState extends State<DevicesView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(theme),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 20,
-                  mainAxisSpacing: 20,
-                  childAspectRatio: 0.82,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppTheme.globalBackgroundGradient,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(theme),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.95,
+                  ),
+                  itemCount: widget.controller.devices.length,
+                  itemBuilder: (context, index) {
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 350 + (index * 80)),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Transform.scale(
+                          scale: 0.8 + (0.2 * value),
+                          child: Opacity(
+                            opacity: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _buildDeviceCard(
+                        widget.controller.devices[index],
+                        index,
+                        theme,
+                      ),
+                    );
+                  },
                 ),
-                itemCount: widget.controller.devices.length,
-                itemBuilder: (context, index) {
-                  return _buildDeviceCard(
-                    widget.controller.devices[index],
-                    index,
-                    theme,
-                  );
-                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -66,32 +86,35 @@ class _DevicesViewState extends State<DevicesView> {
         children: [
           GestureDetector(
             onTap: widget.onBackPressed,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               width: 44,
               height: 44,
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
+                border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.2),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
+                    color: AppTheme.primary.withValues(alpha: 0.08),
+                    blurRadius: 12,
                   ),
                 ],
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.chevron_left_rounded,
-                color: theme.colorScheme.secondary,
+                color: Colors.white,
                 size: 28,
               ),
             ),
           ),
-          Text(
+          const Text(
             'Connected Devices',
             style: TextStyle(
               fontSize: 22,
-              color: theme.textTheme.bodyLarge?.color,
+              color: AppTheme.textPrimary,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
             ),
@@ -103,6 +126,55 @@ class _DevicesViewState extends State<DevicesView> {
   }
 
   Widget _buildDeviceCard(DeviceData device, int index, ThemeData theme) {
+    // Map device properties based on index
+    String title = device.name;
+    String subtitle = 'Living Room';
+    String imagePath;
+    Color switchColor;
+    Color cardColor;
+    double imgWidth = 150;
+    double imgHeight = 150;
+    double imgRight = -8;
+    double imgBottom = -8;
+    
+    switch (title.toLowerCase()) {
+      case 'ac':
+        title = 'Smart AC';
+        imagePath = 'assets/images/AC.png';
+        imgWidth = 170;
+        imgHeight = 110;
+        imgRight = 5;
+        imgBottom = 15;
+        break;
+      case 'lights':
+        title = 'Smart Lamp';
+        imagePath = 'assets/images/lamp.png';
+        imgRight = 10;
+        imgBottom = 10;
+        break;
+      case 'fan':
+        title = 'Smart Fan';
+        imagePath = 'assets/images/fan.png';
+        imgWidth = 135;
+        imgHeight = 135;
+        imgRight = 10;
+        imgBottom = 10;
+        break;
+      case 'tv':
+        title = 'Smart TV';
+        imagePath = 'assets/images/TV.png';
+        imgWidth = 180;
+        imgHeight = 120;
+        imgRight = 5;
+        imgBottom = 15;
+        break;
+      default:
+        imagePath = 'assets/images/lamp.png';
+    }
+    
+    switchColor = AppTheme.primary;
+    cardColor = AppTheme.cardBackground;
+
     void toggleDevice() {
       setState(() {
         widget.controller.toggleDevice(index);
@@ -111,74 +183,92 @@ class _DevicesViewState extends State<DevicesView> {
 
     return GestureDetector(
       onTap: toggleDevice,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        decoration: BoxDecoration(
-          color: device.isOn
-              ? theme.primaryColor.withOpacity(0.04)
-              : theme.cardColor,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: device.isOn 
-                ? theme.primaryColor.withOpacity(0.2) 
-                : theme.dividerColor.withOpacity(0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: device.isOn 
-                  ? theme.primaryColor.withOpacity(0.1) 
-                  : Colors.black.withOpacity(0.03),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            border: Border.all(
+              color: device.isOn ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.inputBorder,
+              width: 1.5,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            boxShadow: device.isOn ? AppTheme.cardGlow : AppTheme.softShadow,
+          ),
+          child: Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: device.isOn ? theme.primaryColor : theme.dividerColor.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  device.icon,
-                  color: device.isOn ? Colors.white : theme.disabledColor,
-                  size: 24,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                device.name,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: theme.textTheme.bodyLarge?.color,
+              // Device Image at Bottom Right
+              Positioned(
+                right: imgRight,
+                bottom: imgBottom,
+                width: imgWidth, 
+                height: imgHeight,
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomRight,
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    device.isOn ? 'Active' : 'Standby',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: device.isOn
-                          ? theme.primaryColor
-                          : theme.disabledColor,
+              
+              // Content (Text & Switch)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                  AnimatedToggleButton(
-                    isOn: device.isOn,
-                    onTap: toggleDevice,
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Vertical Custom Switch
+                    GestureDetector(
+                      onTap: toggleDevice,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 26,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: device.isOn ? switchColor : switchColor.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          alignment: device.isOn ? Alignment.topCenter : Alignment.bottomCenter,
+                          child: Container(
+                            margin: const EdgeInsets.all(3),
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: AppTheme.textPrimary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

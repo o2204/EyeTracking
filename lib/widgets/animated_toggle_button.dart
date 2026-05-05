@@ -19,34 +19,58 @@ class AnimatedToggleButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        width: 50,
-        height: 28,
+        width: 52,
+        height: 30,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: isOn ? AppTheme.primary : Colors.grey.shade300,
-          boxShadow: isOn ? [
-            BoxShadow(
-              color: AppTheme.primary.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ] : [],
+          gradient: isOn
+              ? const LinearGradient(
+                  colors: [AppTheme.primary, Color(0xFF00A67E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isOn ? null : Colors.grey.shade600,
+          boxShadow: isOn
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: AppTheme.primary.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: AnimatedAlign(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           alignment: isOn ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 20,
-            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: 22,
+            height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
+                  color: isOn
+                      ? AppTheme.primary.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../controllers/devices_controller.dart';
 import '../controllers/home_controller.dart';
 import '../controllers/room_controller.dart';
+import '../theme/app_theme.dart';
 import '../widgets/keyboard_popup.dart';
 import 'devices_view.dart';
 import 'profile_view.dart';
@@ -55,7 +56,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _getCurrentPage(),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _getCurrentPage(),
+      ),
       bottomNavigationBar: _buildCustomBottomNavigationBar(),
     );
   }
@@ -64,6 +70,7 @@ class _HomePageState extends State<HomePage> {
     switch (_controller.selectedTab) {
       case 0:
         return RoomView(
+          key: const ValueKey('rooms'),
           controller: _roomController,
           isDarkMode: widget.isDarkMode,
           onDarkModeToggle: widget.onDarkModeToggle,
@@ -75,6 +82,7 @@ class _HomePageState extends State<HomePage> {
         );
       case 1:
         return DevicesView(
+          key: const ValueKey('devices'),
           controller: _devicesController,
           isDarkMode: widget.isDarkMode,
           onDarkModeToggle: widget.onDarkModeToggle,
@@ -86,11 +94,13 @@ class _HomePageState extends State<HomePage> {
         );
       case 2:
         return ProfileView(
+          key: const ValueKey('profile'),
           isDarkMode: widget.isDarkMode,
           onDarkModeToggle: widget.onDarkModeToggle,
         );
       default:
         return RoomView(
+          key: const ValueKey('rooms_default'),
           controller: _roomController,
           isDarkMode: widget.isDarkMode,
           onDarkModeToggle: widget.onDarkModeToggle,
@@ -107,16 +117,27 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: AppTheme.cardBackground.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(35),
           topRight: Radius.circular(35),
         ),
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.primary.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 30,
             offset: const Offset(0, -10),
+          ),
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.04),
+            blurRadius: 40,
+            offset: const Offset(0, -5),
           ),
         ],
       ),
@@ -162,18 +183,23 @@ class _HomePageState extends State<HomePage> {
                       width: 70,
                       height: 70,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [theme.primaryColor, theme.colorScheme.secondary],
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.primaryHover],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.3),
+                            color: AppTheme.primary.withValues(alpha: 0.4),
                             blurRadius: 20,
                             spreadRadius: 2,
                             offset: const Offset(0, 8),
+                          ),
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.15),
+                            blurRadius: 40,
+                            spreadRadius: 5,
                           ),
                         ],
                       ),
@@ -201,10 +227,20 @@ class _HomePageState extends State<HomePage> {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(
-        icon,
-        color: isSelected ? theme.primaryColor : theme.disabledColor,
-        size: 28,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? AppTheme.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? AppTheme.primary : theme.disabledColor,
+          size: 28,
+        ),
       ),
     );
   }

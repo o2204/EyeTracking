@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../routes/app_routes.dart';
+import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,72 +11,218 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  final List<Animation<double>> _animations = [];
+    with TickerProviderStateMixin {
+  late AnimationController _logoController;
+  late AnimationController _pulseController;
+  late Animation<double> _logoScale;
+  late Animation<double> _logoOpacity;
+  late Animation<double> _pulseAnim;
 
   @override
   void initState() {
     super.initState();
 
-    // Total duration for the 9 dots sequence
-    _controller = AnimationController(
+    // Logo entrance animation
+    _logoController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2800),
+      duration: const Duration(milliseconds: 1200),
     );
 
-    // Create 9 staggered animations (3x3 grid)
-    const int dotCount = 9;
-    const double intervalStep = 1.0 / dotCount;
+    _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoController,
+        curve: Curves.elasticOut,
+      ),
+    );
 
-    for (int i = 0; i < dotCount; i++) {
-      final double start = i * intervalStep * 0.8; // Overlap slightly for smoothness
-      final double end = math.min(start + intervalStep * 1.5, 1.0);
+    _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
 
-      _animations.add(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(start, end, curve: Curves.easeOutBack),
-        ),
-      );
-    }
+    // Pulse glow animation
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
 
-    _controller.forward();
+    _pulseAnim = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _logoController.forward();
 
     // Navigate to Login after animation
-    Timer(const Duration(milliseconds: 3800), () {
+    Timer(const Duration(milliseconds: 3000), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+        Navigator.pushReplacementNamed(context, AppRoutes.interactiveIntro);
       }
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _logoController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white, // As per image
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 400),
-          padding: const EdgeInsets.all(40),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 60,
-              mainAxisSpacing: 60,
-            ),
-            itemCount: 9,
-            itemBuilder: (context, index) {
-              return CalibrationDot(
-                animation: _animations[index],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.darkBackgroundGradient
+              : AppTheme.lightBackgroundGradient,
+        ),
+        child: Center(
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_logoController, _pulseController]),
+            builder: (context, child) {
+              final screenWidth = MediaQuery.sizeOf(context).width;
+              // Make circle responsive, max 300 for large screens
+              final baseCircleSize = screenWidth > 600 ? 300.0 : screenWidth * 0.5;
+              final currentCircleSize = baseCircleSize + (_pulseAnim.value * 40);
+              // Logo size 85% of current circle size
+              final logoSize = currentCircleSize * 0.85;
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Pulsing glow behind logo
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer glow ring
+                      Container(
+                        width: currentCircleSize,
+                        height: currentCircleSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primary.withValues(
+                                alpha: _pulseAnim.value * 0.08,
+                              ),
+                              blurRadius: 80,
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Logo with scale + fade
+                      Transform.scale(
+                        scale: _logoScale.value,
+                        child: Opacity(
+                          opacity: _logoOpacity.value.clamp(0.0, 1.0),
+                          child: Container(
+                            width: logoSize,
+                            height: logoSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primary.withValues(alpha: 0.15),
+                                  blurRadius: 40,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primary.withValues(alpha: 0.3),
+                                      AppTheme.accent.withValues(alpha: 0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.remove_red_eye_rounded,
+                                  color: AppTheme.primary,
+                                  size: 70,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  // App name with fade-slide
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Eye Intelligence',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: isDark
+                            ? AppTheme.textPrimaryDark
+                            : AppTheme.textPrimaryLight,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1000),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: value,
+                        child: child,
+                      );
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Smart Home System',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 2.0,
+                            color: AppTheme.primary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Click on the points using your eye',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 1.0,
+                            color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -85,88 +231,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
-class CalibrationDot extends StatefulWidget {
-  final Animation<double> animation;
-
-  const CalibrationDot({
-    super.key,
-    required this.animation,
-  });
-
-  @override
-  State<CalibrationDot> createState() => _CalibrationDotState();
-}
-
-class _CalibrationDotState extends State<CalibrationDot> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.animation,
-      builder: (context, child) {
-        final double value = widget.animation.value;
-        
-        // Flip Up rotation: -90 degrees to 0 degrees
-        final double rotation = (1 - value) * -math.pi / 2;
-        
-        return MouseRegion(
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001) // perspective
-              ..rotateX(rotation)
-              ..scale(value),
-            child: Opacity(
-              opacity: value.clamp(0.0, 1.0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutBack,
-                transform: Matrix4.identity()
-                  ..translate(0.0, _isHovered ? -12.0 : 0.0), // Moves up on hover
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(_isHovered ? 0.15 : 0.08),
-                      blurRadius: _isHovered ? 20 : 10,
-                      offset: Offset(0, _isHovered ? 12 : 4),
-                      spreadRadius: _isHovered ? 4 : 2,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.03),
-                    width: 1,
-                  ),
-                ),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: _isHovered ? 12 : 8,
-                    height: _isHovered ? 12 : 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isHovered 
-                          ? const Color(0xFF10B981) // Turns Emerald Green when hovered
-                          : Colors.black.withOpacity(0.02),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-

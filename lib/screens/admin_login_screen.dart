@@ -73,14 +73,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.darkBackgroundGradient
+              : AppTheme.lightBackgroundGradient,
+        ),
+        child: Stack(
         children: [
           // Background Tech Grid
           Positioned.fill(
             child: CustomPaint(
               painter: TechGridPainter(
-                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+                color: AppTheme.primary.withValues(alpha: isDark ? 0.15 : 0.05),
               ),
             ),
           ),
@@ -96,7 +101,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    AppTheme.primary.withValues(alpha: isDark ? 0.20 : 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -138,10 +143,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primary.withOpacity(0.12),
+                                  color: AppTheme.primary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: AppTheme.primary.withOpacity(0.3),
+                                    color: AppTheme.primary.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -255,7 +260,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                 '← Back to User Login',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: textColorSecondary.withOpacity(0.7),
+                                  color: textColorSecondary.withValues(alpha: 0.7),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -271,6 +276,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -16,8 +16,11 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
         activeDot++;
       });
     } else {
-      // خلص calibration
-      print("Calibration Done");
+      ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Calibration Completed ✅"),
+        duration: Duration(seconds: 2),
+      ),);
     }
   }
 
@@ -68,7 +71,7 @@ class _CalibrationScreenState extends State<CalibrationScreen> {
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: theme.primaryColor.withOpacity(0.5),
+                      color: theme.primaryColor.withValues(alpha: 0.5),
                       blurRadius: 10,
                       spreadRadius: 2,
                     )

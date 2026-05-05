@@ -19,34 +19,33 @@ class AuthCard extends StatelessWidget {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark 
-                ? theme.cardColor.withOpacity(0.6) 
-                : Colors.white.withOpacity(0.85),
+            color: isDark
+                ? theme.cardColor.withValues(alpha: 0.65)
+                : Colors.white.withValues(alpha: 0.88),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.1)
-                  : AppTheme.primary.withOpacity(0.15),
+                  ? AppTheme.primary.withValues(alpha: 0.12)
+                  : AppTheme.primary.withValues(alpha: 0.18),
               width: 1.5,
             ),
             boxShadow: [
               // Core shadow
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(0.4)
-                    : AppTheme.primary.withOpacity(0.08),
+                    ? Colors.black.withValues(alpha: 0.45)
+                    : AppTheme.primary.withValues(alpha: 0.06),
                 blurRadius: 40,
                 spreadRadius: -5,
                 offset: const Offset(0, 12),
               ),
-              // Emerald glow emulation
-              if (!isDark)
-                BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.04),
-                  blurRadius: 60,
-                  spreadRadius: 0,
-                  offset: const Offset(0, 20),
-                ),
+              // Subtle green glow
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: isDark ? 0.06 : 0.04),
+                blurRadius: 60,
+                spreadRadius: 0,
+                offset: const Offset(0, 20),
+              ),
             ],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),

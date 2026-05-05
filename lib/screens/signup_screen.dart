@@ -78,14 +78,19 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
     final textColorSecondary = isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.darkBackgroundGradient
+              : AppTheme.lightBackgroundGradient,
+        ),
+        child: Stack(
         children: [
           // Background Tech Grid
           Positioned.fill(
             child: CustomPaint(
               painter: TechGridPainter(
-                color: AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+                color: AppTheme.primary.withValues(alpha: isDark ? 0.15 : 0.05),
               ),
             ),
           ),
@@ -101,7 +106,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(isDark ? 0.20 : 0.05),
+                    AppTheme.primary.withValues(alpha: isDark ? 0.20 : 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -231,6 +236,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
             ),
           ),
         ],
+        ),
       ),
     );
   }
