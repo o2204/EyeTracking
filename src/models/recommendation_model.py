@@ -37,7 +37,7 @@ class RecommendationModel(Base):
     recommendation: Mapped[str] = mapped_column(String, nullable=False)
 
     status: Mapped[RecommendationStatus] = mapped_column(
-        Enum(RecommendationStatus),
+        Enum(RecommendationStatus, name="recommendation_status"),
         default=RecommendationStatus.PENDING
     )
 
@@ -48,5 +48,5 @@ class RecommendationModel(Base):
 
     report_url: Mapped[str] = mapped_column(String, nullable=True)
 
-    device = relationship("DeviceModel", back_populates="recommendations")
+    device = relationship("DevicesModel", back_populates="recommendations")
     user = relationship("UserModel", back_populates="recommendations")

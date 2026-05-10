@@ -20,8 +20,12 @@ database_url = unquote(settings.DATABASE_URL)
 
 engine: AsyncEngine = create_async_engine(
     database_url,
-    echo=False,  # set True only for debugging
+    echo=False,
     pool_pre_ping=True,
+    pool_size=10,          # max persistent connections (was default 5)
+    max_overflow=20,       # allow bursts up to 30 total
+    pool_recycle=1800,     # recycle connections every 30 min to avoid stale ones
+    pool_timeout=30,       # wait max 30s for a connection before raising
 )
 
 AsyncSessionLocal = async_sessionmaker(

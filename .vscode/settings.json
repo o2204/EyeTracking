@@ -3,15 +3,26 @@
     "python-envs.defaultPackageManager": "ms-python.python:conda",
     "cSpell.words": [
         "automations",
+        "cognitiveservices",
         "cooldown",
+        "Coqui",
         "crewai",
         "fastmail",
+        "frombuffer",
         "httpx",
+        "imdecode",
+        "IMREAD",
         "joblib",
+        "nparr",
+        "pydub",
+        "pyhub",
         "scikit",
+        "soundfile",
+        "speechsdk",
         "superadmin",
         "timedleta",
         "weasyprint",
+        "xtts",
         "zxcvbn"
     ]
 }

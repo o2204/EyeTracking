@@ -1,28 +1,47 @@
-from zxcvbn import zxcvbn
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form,  Request
+from fastapi import APIRouter, Depends, Form, Request, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
-from src.schemas.user_schema import UserCreate 
+from src.schemas.user_schema import UserCreate, GoogleToken
 from src.core.cointer import UserServiceDep, get_user_token
 from src.schemas.user_schema import UserRead
 from src.clients.db.redis import add_jti_to_blacklist
 from src.core.config import settings
-
 from src.core.cointer import templates
+from src.models.user_model import UserModel
+from src.core.utils.password_validator import validate_password
 
 user_router = APIRouter(prefix="/user", tags=["Users"])
 
 
-@user_router.post("/signup", response_model=UserRead)
+@user_router.post(
+    "/signup",
+    response_model=UserRead
+)
 async def create_user(
     user: UserCreate,
     user_service: UserServiceDep
 ):
+    errors = validate_password(
+        user.password,
+        user.confirm_password
+    )
+
+    if errors:
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=errors
+        )
+
     return await user_service._add_user(
-        data=user.model_dump(),
+        data=user.model_dump(
+            exclude={"confirm_password"}
+        ),
         router_prefix=user_router.prefix
     )
 
@@ -85,38 +104,44 @@ async def get_reset_password_form(request: Request, token: str):
 @user_router.post("/reset-password")
 async def reset_password(
     request: Request,
-    token: Annotated[str, Form()], 
+    token: Annotated[str, Form()],
     password: Annotated[str, Form()],
-    confirm_password: Annotated[str, Form()], 
+    confirm_password: Annotated[str, Form()],
     service: UserServiceDep
 ):
-    errors = []
+    errors = validate_password(
+        password,
+        confirm_password
+    )
 
-    # Match check for password and confirm password
-    if password != confirm_password:
-        errors.append("Passwords do not match.")
-    # zxcvbn password strength check
-    result = zxcvbn(password)
-    if result["score"] < 3:
-        errors.append("Password is too weak. Please choose a stronger password.")
-    if len(password) < 8:
-        errors.append("Password must be at least 8 characters long.")
     if errors:
         return templates.TemplateResponse(
             request=request,
             name="password/reset.html",
             context={
                 "request": request,
-                "reset_password": f"http://{settings.APP_DOMAIN}{user_router.prefix}/reset-password?token={token}",
+                "reset_password":
+                    f"http://{settings.APP_DOMAIN}"
+                    f"{user_router.prefix}"
+                    f"/reset-password?token={token}",
+
                 "token": token,
                 "errors": errors
             }
         )
-    is_success = await service.reset_password(token, password)
+
+    is_success = await service.reset_password(
+        token,
+        password
+    )
 
     return templates.TemplateResponse(
         request=request,
-        name="password/reset_success.html" if is_success else "password/reset_failed.html"
+        name=(
+            "password/reset_success.html"
+            if is_success
+            else "password/reset_failed.html"
+        )
     )
 
 
@@ -129,4 +154,40 @@ async def logout_user(
 
     return {
         "detail": "Successful Log Out"
+    }
+
+
+@user_router.post("/google-auth")
+async def google_auth(
+    token_data: GoogleToken,
+    service: UserServiceDep
+):
+
+    google_user = service.verify_google_token(token_data.id_token)
+
+    email = google_user["email"]
+    name = google_user["name"]
+
+    user = await service._get_by_email(email)
+
+    # Signup automatically if user doesn't exist
+    if not user:
+
+        user = await service._add(
+            UserModel(
+                email=email,
+                name=name,
+                password_hash="google_auth",
+            )
+        )
+
+    access_token = service.auth.generate_token(user)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "email": user.email,
+            "name": user.name,
+        }
     }

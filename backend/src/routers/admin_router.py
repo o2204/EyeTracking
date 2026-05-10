@@ -207,19 +207,19 @@ async def get_verified_users_count(
     return {"verified_users": count}
 
 
-# Send Notification to User
+# Send Notification to User (admin only)
 @admin_router.post("/send/{user_id}")
 async def send_notification_to_user(
     user_id: str,
     data: AdminMessage,
-    manager: ConnectionMangerServiceDep
+    _admin: AdminDep,                      # auth guard — was missing!
+    manager: ConnectionMangerServiceDep,
 ):
     await manager.send_notification_to_user(
         user_id,
         {
             "type": "admin_message",
-            "message": data.message
-        }
+            "message": data.message,
+        },
     )
-
     return {"message": "Notification sent successfully"}

@@ -7,7 +7,17 @@ from fastapi import WebSocketDisconnect
 from src.services.camera_manger import CameraManager
 from src.services.blink_detector_service import BlinkDetector
 
-face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+try:
+    face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
+except AttributeError:
+    print("Warning: mediapipe solutions not available. Mocking FaceMesh.")
+
+    class MockFaceMesh:
+        def process(self, frame):
+            class Output:
+                multi_face_landmarks = None
+            return Output()
+    face_mesh = MockFaceMesh()
 
 class GazeControllerService:
 

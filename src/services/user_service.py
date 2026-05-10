@@ -1,3 +1,7 @@
+from google.oauth2 import id_token
+from google.auth.transport import requests
+import httpx
+
 from datetime import timedelta
 from uuid import UUID
 
@@ -7,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.user_model import UserModel
 from src.services.utils import decode_url_safe_token, generate_url_safe_token
+from src.core.utils.password_validator import validate_password
 from src.core.config import settings
 from src.services.notification_service import NotificationService
 
@@ -68,6 +73,31 @@ class UserService(BaseService):
         await self._update(user)
         return True
     
+    def verify_google_token(self, token: str):
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                settings.GOOGLE_CLIENT_ID
+            )
+            return {
+                "email": idinfo.get("email"),
+                "name": idinfo.get("name", "User"),
+            }
+        except Exception:
+            # Fallback for Flutter Web which often returns access_token instead of id_token
+            resp = httpx.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            if resp.status_code == 200:
+                user_info = resp.json()
+                return {
+                    "email": user_info.get("email"),
+                    "name": user_info.get("name", "User"),
+                }
+            raise ValueError("Invalid Google token")
+
     async def _get_by_email(self, email: str) -> UserModel | None:
         return await self.session.scalar(
             select(self.model).where(self.model.email == email)

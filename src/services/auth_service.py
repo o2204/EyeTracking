@@ -18,7 +18,10 @@ class AuthService:
         return password_context.hash(password)
 
     def verify_password(self, password: str, hashed: str) -> bool:
-        return password_context.verify(password, hashed)
+        try:
+            return password_context.verify(password, hashed)
+        except Exception:
+            return False
 
     def validate_credentials(self, entity, password: str):
         if not entity:
@@ -31,11 +34,11 @@ class AuthService:
         self.logger.info(f"Email verified: {entity.email_verified}")
 
         if not is_valid:
-            self.logger.warning("❌ Wrong password")
+            self.logger.warning("Wrong password")
             raise HTTPException(401, "Invalid email or password")
 
         if hasattr(entity, "email_verified") and not entity.email_verified:
-            self.logger.warning("❌ Email not verified")
+            self.logger.warning("Email not verified")
             raise HTTPException(401, "Email not verified")
 
     def generate_token(self, entity) -> str:

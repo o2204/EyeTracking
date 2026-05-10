@@ -18,9 +18,11 @@ from src.services.notification_service import NotificationService
 from src.services.pdf_service import PDFService
 from src.services.scheduler_service import SchedulerService
 from src.services.user_service import UserService
+from src.services.device_service import DeviceService
 from src.services.utils import decode_access_token
 from src.models.user_model import UserModel
 from src.clients.db.redis import is_jti_blacklisted
+from src.core.config import settings
 
 # Asynchronous database session dep annotation
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
@@ -106,6 +108,16 @@ CalibrationPointsServiceDep = Annotated[
 ]
 
 
+# Device Service dep
+def get_device_service(db: SessionDep) -> DeviceService:
+    return DeviceService(session=db)
+
+DeviceServiceDep = Annotated[
+    DeviceService,
+    Depends(get_device_service)
+]
+
+
 ## Connection Manager Service dep
 def get_connection_manager_service() -> ConnectionManagerService:
     return ConnectionManagerService()
@@ -187,7 +199,7 @@ AnalysisServiceDep = Annotated[
 ]
 
 # Scheduler Service
-scheduler_service = SchedulerService()
+scheduler_service = SchedulerService(settings.DATABASE_URL)
 
 def get_scheduler_service() -> SchedulerService:
     return scheduler_service

@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
 import uuid
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -37,6 +37,18 @@ class DevicesModel(Base):
         nullable=True
     )
 
+    status: Mapped[str] = mapped_column(
+        String,
+        nullable=True,
+        default="Connected"
+    )
+
+    accessibility_features: Mapped[list] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list
+    )
+
     actions: Mapped[List["UserAction"]] = relationship(
         "UserAction",
         back_populates="device",
@@ -44,6 +56,12 @@ class DevicesModel(Base):
     )
 
     user: Mapped["UserModel"] = relationship(
-    "UserModel",
-    back_populates="devices"
+        "UserModel",
+        back_populates="devices"
+    )
+
+    recommendations = relationship(
+        "RecommendationModel",
+        back_populates="device",
+        cascade="all, delete-orphan"
     )

@@ -4,7 +4,7 @@ import '../routes/app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/auth_card.dart';
-import 'login_screen.dart'; // For TechGridPainter
+import '../widgets/tech_grid_painter.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from src.models.calibration_points_model import CalibrationPointsModel
     from src.models.devices_model import DevicesModel
     from src.models.user_actions_model import UserAction
+    from src.models.recommendation_model import RecommendationModel
 
 
 class UserModel(Base):
@@ -50,7 +51,13 @@ class UserModel(Base):
     )
 
     devices: Mapped[List["DevicesModel"]] = relationship(
-    "DevicesModel",
-    back_populates="user",
-    cascade="all, delete-orphan"
+        "DevicesModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    recommendations: Mapped[List["RecommendationModel"]] = relationship(
+        "RecommendationModel",
+        back_populates="user",
+        cascade="all, delete-orphan"
     )

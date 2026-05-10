@@ -7,7 +7,6 @@ from fastapi import WebSocketDisconnect
 from src.services.camera_manger import CameraManager
 from src.services.blink_detector_service import BlinkDetector
 
-face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 
 class GazeControllerService:
 
@@ -15,6 +14,8 @@ class GazeControllerService:
         self.prev_x = 0
         self.prev_y = 0
         self.blink_detector = BlinkDetector()
+
+        self.face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 
         # Load ML models
         try:
@@ -47,7 +48,7 @@ class GazeControllerService:
                 frame = cv2.flip(frame, 1)
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                output = face_mesh.process(rgb_frame)
+                output = self.face_mesh.process(rgb_frame)
 
                 if output.multi_face_landmarks:
                     landmarks = output.multi_face_landmarks[0].landmark

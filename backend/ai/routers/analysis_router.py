@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi import WebSocket
 
 from ai.core.cointer import CohereDep
 from ai.agents.crew_runner import run_analysis_flow
@@ -16,7 +17,6 @@ def predict(
 ):
     return run_analysis_flow(input.data, cohere_client)
 
-from fastapi import WebSocket
 
 @router.websocket("/ws/camera")
 async def websocket_camera(websocket: WebSocket):

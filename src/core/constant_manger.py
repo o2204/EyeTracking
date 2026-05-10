@@ -1,6 +1,10 @@
 from enum import Enum
 from pathlib import Path
+from itsdangerous import URLSafeTimedSerializer
 
+from src.core.config import settings
+
+_serializer = URLSafeTimedSerializer(settings.JWT_SECRET)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 TEMPLATE_DIR = BASE_DIR / "src" / "templates"

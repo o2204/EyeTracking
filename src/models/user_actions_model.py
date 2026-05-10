@@ -36,7 +36,7 @@ class UserAction(Base):
     )
 
     action: Mapped[ActionTypeEnum] = mapped_column(
-        SQLEnum(ActionTypeEnum),
+        SQLEnum(ActionTypeEnum, name="action_type_enum"),
         nullable=False
     )
 

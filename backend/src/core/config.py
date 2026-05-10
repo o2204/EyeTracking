@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     # App Settings 
     APP_NAME: str = "EyeTracking"
     APP_DOMAIN: str = "localhost:8000"
+    MQTT_BROKER: str
+    WEATHER_API_KEY: str 
     
     # AI Service URL 
     AI_SERVICE_URL: str 

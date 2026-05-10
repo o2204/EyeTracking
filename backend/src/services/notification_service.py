@@ -84,27 +84,44 @@ class NotificationService:
     async def send_emergency_sms(self, to: str, body: Default_Message_For_Emergency):
         await self.send_sms(to, body.body)
 
-    async def send_email_with_pdf(self, to_email, subject, body, file_path):
+    async def send_email_with_pdf(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        file_path: str,
+    ) -> None:
+        """Send email with PDF attachment using smtplib (FastMail doesn't support attachments)."""
         msg = MIMEMultipart()
-        msg["From"] = self.from_email()
+        msg["From"] = notification_settings.MAIL_FROM
         msg["To"] = to_email
         msg["Subject"] = subject
 
         msg.attach(MIMEText(body, "plain"))
 
-        # attach PDF 
         with open(file_path, "rb") as f:
             part = MIMEBase("application", "octet-stream")
             part.set_payload(f.read())
-        
+
         encoders.encode_base64(part)
         part.add_header(
             "Content-Disposition",
-            "attachment; filename=report.pdf"
+            "attachment; filename=report.pdf",
         )
-        
         msg.attach(part)
-        with smtplib.SMTP(self.host, self.port) as server:
-            server.starttls()
-            server.login(self.username, self.password)
-            server.send_message(msg)
+
+        # Run blocking smtplib call in background to avoid blocking the event loop
+        def _send() -> None:
+            with smtplib.SMTP(
+                notification_settings.MAIL_SERVER,
+                notification_settings.MAIL_PORT,
+            ) as server:
+                if notification_settings.MAIL_STARTTLS:
+                    server.starttls()
+                server.login(
+                    notification_settings.MAIL_USERNAME,
+                    notification_settings.MAIL_PASSWORD,
+                )
+                server.send_message(msg)
+
+        self.tasks.add_task(_send)

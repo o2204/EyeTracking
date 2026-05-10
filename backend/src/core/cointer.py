@@ -21,6 +21,7 @@ from src.services.user_service import UserService
 from src.services.utils import decode_access_token
 from src.models.user_model import UserModel
 from src.clients.db.redis import is_jti_blacklisted
+from src.core.config import settings
 
 # Asynchronous database session dep annotation
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
@@ -187,7 +188,7 @@ AnalysisServiceDep = Annotated[
 ]
 
 # Scheduler Service
-scheduler_service = SchedulerService()
+scheduler_service = SchedulerService(settings.DATABASE_URL)
 
 def get_scheduler_service() -> SchedulerService:
     return scheduler_service

@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "EyeTracking"
     APP_DOMAIN: str = "localhost:8000"
     
+    # Weather Settings 
+    WEATHER_API_KEY: str
+
+    GOOGLE_CLIENT_ID: str
     # AI Service URL 
     AI_SERVICE_URL: str 
 

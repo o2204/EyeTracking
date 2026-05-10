@@ -7,6 +7,10 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    confirm_password: str
 
 class UserRead(UserBase):
     pass 
+
+class GoogleToken(BaseModel):
+    id_token: str

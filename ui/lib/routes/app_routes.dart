@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../screens/login_screen.dart';
 import '../screens/signup_screen.dart';
-import '../screens/admin_login_screen.dart';
 import '../screens/admin_dashboard_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/splash_screen.dart';
-import '../views/home_page.dart';
+import '../screens/dashboard_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../features/profile/screens/edit_profile_screen.dart';
 import '../features/profile/screens/help_support_screen.dart';
@@ -40,7 +39,7 @@ class AppRoutes {
         splash: (_) => const SplashScreen(),
         interactiveIntro: (_) => const InteractiveIntroScreen(),
         login: (_) => const LoginScreen(),
-        home: (_) => const HomeScreen(),
+        home: (_) => const DashboardScreen(),
         signup: (_) => const SignupScreen(),
         adminLogin: (_) => const AdminLoginScreen(),
         adminDashboard: (_) => const AdminDashboardScreen(),
