@@ -35,14 +35,17 @@ class GazeControllerService:
         return eye_distance < 0.01
 
     async def run(self, websocket):
-        cam = CameraManager.get_camera()
-
         try:
             while True:
-                # Non-blocking camera
-                success, frame = await asyncio.to_thread(cam.read)
+                # Receive image bytes from client
+                data = await websocket.receive_bytes()
+                
+                # Decode image from bytes
+                import numpy as np
+                nparr = np.frombuffer(data, np.uint8)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                if not success:
+                if frame is None:
                     continue
 
                 frame = cv2.flip(frame, 1)
@@ -88,8 +91,6 @@ class GazeControllerService:
                         response["action"] = "click"
 
                     await websocket.send_json(response)
-
-                await asyncio.sleep(1 / 30)  # ~30 FPS
 
         except WebSocketDisconnect:
             print("Client disconnected")

@@ -5,9 +5,8 @@ from fastapi import APIRouter, Depends, Form,  Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 
-from src.schemas.user_schema import UserCreate 
-from src.core.cointer import UserServiceDep, get_user_token
-from src.schemas.user_schema import UserRead
+from src.schemas.user_schema import UserCreate, UserRead
+from src.core.cointer import UserServiceDep, get_user_token, UserDep
 from src.clients.db.redis import add_jti_to_blacklist
 from src.core.config import settings
 
@@ -25,6 +24,16 @@ async def create_user(
         data=user.model_dump(),
         router_prefix=user_router.prefix
     )
+
+
+@user_router.get("/me", response_model=UserRead)
+async def get_me(
+    user: UserDep
+):
+    """
+    Get the current logged in user's profile
+    """
+    return user
 
 
 ### Login the user 

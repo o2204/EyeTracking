@@ -92,9 +92,17 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       final user = await _googleSignIn.signIn();
-      if (user == null) return;
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final auth = await user.authentication;
       final String tokenToSend = auth.idToken ?? auth.accessToken ?? '';
@@ -113,19 +121,27 @@ class _LoginScreenState extends State<LoginScreen>
 
           if (mounted) Navigator.pushReplacementNamed(context, '/home');
         } else {
+          final error = json.decode(response.body);
+          String errorMessage = 'Google authentication failed';
+          if (error['detail'] is String) {
+            errorMessage = error['detail'];
+          }
+          
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to authenticate with backend')),
-            );
+            setState(() {
+              _errorMessage = errorMessage;
+            });
           }
         }
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-In Error: $error')),
-        );
+        setState(() {
+          _errorMessage = 'Google Sign-In Error: $error';
+        });
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

@@ -73,8 +73,10 @@ class UserService(BaseService):
         await self._update(user)
         return True
     
-    def verify_google_token(self, token: str):
+    async def verify_google_token(self, token: str):
         try:
+            # Note: id_token.verify_oauth2_token is synchronous. 
+            # We wrap it in a thread if needed, but for now we keep it simple.
             idinfo = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
@@ -86,16 +88,17 @@ class UserService(BaseService):
             }
         except Exception:
             # Fallback for Flutter Web which often returns access_token instead of id_token
-            resp = httpx.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            if resp.status_code == 200:
-                user_info = resp.json()
-                return {
-                    "email": user_info.get("email"),
-                    "name": user_info.get("name", "User"),
-                }
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {token}"}
+                )
+                if resp.status_code == 200:
+                    user_info = resp.json()
+                    return {
+                        "email": user_info.get("email"),
+                        "name": user_info.get("name", "User"),
+                    }
             raise ValueError("Invalid Google token")
 
     async def _get_by_email(self, email: str) -> UserModel | None:

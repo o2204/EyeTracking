@@ -6,7 +6,7 @@ from pydantic import EmailStr
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from src.schemas.user_schema import UserCreate, GoogleToken
+from src.schemas.user_schema import UserCreate, GoogleToken, UserLogin
 from src.core.cointer import UserServiceDep, get_user_token
 from src.schemas.user_schema import UserRead
 from src.clients.db.redis import add_jti_to_blacklist
@@ -49,12 +49,12 @@ async def create_user(
 ### Login the user 
 @user_router.post("/login")
 async def login_user(
-    request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    login_data: UserLogin,
     service: UserServiceDep,
 ):
     token = await service.login(
-        request_form.username, 
-        request_form.password
+        login_data.email, 
+        login_data.password
     )
 
     return {
@@ -163,7 +163,7 @@ async def google_auth(
     service: UserServiceDep
 ):
 
-    google_user = service.verify_google_token(token_data.id_token)
+    google_user = await service.verify_google_token(token_data.id_token)
 
     email = google_user["email"]
     name = google_user["name"]
@@ -178,8 +178,12 @@ async def google_auth(
                 email=email,
                 name=name,
                 password_hash="google_auth",
+                email_verified=True,
             )
         )
+    elif not user.email_verified:
+        user.email_verified = True
+        await service._update(user)
 
     access_token = service.auth.generate_token(user)
 

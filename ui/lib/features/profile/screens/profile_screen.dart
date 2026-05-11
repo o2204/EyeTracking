@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../routes/app_routes.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../theme/app_theme.dart';
 import '../widgets/profile_menu_item.dart';
 import '../../../main.dart';
 import '../../../services/theme_service.dart';
+import '../../../services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,6 +15,26 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String _userName = 'User';
+  String _userEmail = 'email@example.com';
+  final UserService _userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    final userData = await _userService.getCurrentUser();
+    if (userData != null && mounted) {
+      setState(() {
+        _userName = userData['name'] ?? 'User';
+        _userEmail = userData['email'] ?? 'email@example.com';
+      });
+    }
+  }
+
   void _logout() {
     showDialog(
       context: context,
@@ -26,9 +48,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('access_token');
+              if (mounted) {
+                Navigator.pop(context);
+                Navigator.pushNamedAndRemoveUntil(
+                    context, AppRoutes.login, (route) => false);
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -102,16 +129,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Omar Atef',
-                                style: TextStyle(
+                              Text(
+                                _userName,
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'EyeIntelligent@Omar.com',
+                                _userEmail,
                                 style: TextStyle(
                                   color: theme.textTheme.bodySmall?.color,
                                 ),

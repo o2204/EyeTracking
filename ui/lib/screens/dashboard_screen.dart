@@ -10,6 +10,7 @@ import 'reception_room_screen.dart';
 import 'camera_streaming_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
 import '../services/api_config.dart';
+import '../services/user_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,6 +28,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   String _humidityString = '--%';
   double _tempProgress = 0.0;
   double _humidityProgress = 0.0;
+  String _userName = 'User';
+  final UserService _userService = UserService();
 
   final List<IconData> _navIcons = [
     Icons.home_rounded,
@@ -40,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void initState() {
     super.initState();
     _fetchWeather();
+    _fetchUserData();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -105,6 +109,15 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    final userData = await _userService.getCurrentUser();
+    if (userData != null && mounted) {
+      setState(() {
+        _userName = userData['name'] ?? 'User';
+      });
     }
   }
 
@@ -523,8 +536,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Welcome home, Omar',
+                        Text(
+                          'Welcome home, $_userName',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,

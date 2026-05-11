@@ -54,3 +54,9 @@ class UserModel(Base):
     back_populates="user",
     cascade="all, delete-orphan"
     )
+
+    recommendations = relationship(
+    "RecommendationModel",
+    back_populates="user",
+    cascade="all, delete-orphan"
+)

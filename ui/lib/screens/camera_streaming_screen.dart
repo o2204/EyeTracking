@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/websocket_service.dart';
 import '../routes/app_routes.dart';
 
@@ -23,7 +24,7 @@ class _CameraStreamingScreenState extends State<CameraStreamingScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
-    _wsService.connect();
+    _initializeConnection();
     _wsSubscription = _wsService.stream.listen(
       (event) {
         if (mounted) {
@@ -34,6 +35,12 @@ class _CameraStreamingScreenState extends State<CameraStreamingScreen> {
         if (mounted) setState(() => _result = 'Connection error');
       },
     );
+  }
+
+  Future<void> _initializeConnection() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    _wsService.connect(token);
   }
 
   Future<void> _initializeCamera() async {

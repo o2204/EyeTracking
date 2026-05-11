@@ -47,3 +47,9 @@ class DevicesModel(Base):
     "UserModel",
     back_populates="devices"
     )
+
+    recommendations = relationship(
+        "RecommendationModel",
+        back_populates="device",
+        cascade="all, delete-orphan"
+    )

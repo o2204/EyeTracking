@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tech_grid_painter.dart';
@@ -96,9 +97,17 @@ class _SignupScreenState extends State<SignupScreen>
   }
 
   Future<void> _signUpWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
       final user = await _googleSignIn.signIn();
-      if (user == null) return;
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final auth = await user.authentication;
       final String tokenToSend = auth.idToken ?? auth.accessToken ?? '';
@@ -111,21 +120,33 @@ class _SignupScreenState extends State<SignupScreen>
         );
 
         if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('access_token', data['access_token']);
+
           if (mounted) Navigator.pushReplacementNamed(context, '/home');
         } else {
+          final error = json.decode(response.body);
+          String errorMessage = 'Google authentication failed';
+          if (error['detail'] is String) {
+            errorMessage = error['detail'];
+          }
+
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to authenticate with backend')),
-            );
+            setState(() {
+              _errorMessage = errorMessage;
+            });
           }
         }
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-Up Error: $error')),
-        );
+        setState(() {
+          _errorMessage = 'Google Sign-In Error: $error';
+        });
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

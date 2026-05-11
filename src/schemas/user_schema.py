@@ -14,3 +14,7 @@ class UserRead(UserBase):
 
 class GoogleToken(BaseModel):
     id_token: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

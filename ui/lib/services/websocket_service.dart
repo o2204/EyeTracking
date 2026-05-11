@@ -9,10 +9,14 @@ class WebSocketService {
 
   Stream<dynamic> get stream => _controller.stream;
 
-  void connect() {
+  void connect([String? token]) {
     if (_disposed) return;
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(ApiConfig.wsUrl));
+      String url = ApiConfig.wsUrl;
+      if (token != null) {
+        url += "?token=$token";
+      }
+      _channel = WebSocketChannel.connect(Uri.parse(url));
       _channel!.stream.listen(
         (message) {
           if (!_controller.isClosed) _controller.add(message);
