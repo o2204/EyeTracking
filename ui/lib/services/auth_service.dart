@@ -12,7 +12,7 @@ class AuthService {
 
   /// Admin Login
   /// Sends request as JSON body to /admin/login
-  Future<Map<String, dynamic>> adminLogin(String username, String password) async {
+  Future<Map<String, dynamic>> adminLogin(String username, String password, {bool rememberMe = false}) async {
     try {
       print('Attempting Admin Login: $username');
       final response = await http.post(
@@ -21,6 +21,7 @@ class AuthService {
         body: json.encode({
           'email': username,
           'password': password,
+          'remember_me': rememberMe,
         }),
       );
 
@@ -51,7 +52,7 @@ class AuthService {
 
   /// User Login
   /// When normal user logs in, set is_admin = false
-  Future<Map<String, dynamic>> userLogin(String email, String password) async {
+  Future<Map<String, dynamic>> userLogin(String email, String password, {bool rememberMe = false}) async {
     try {
       print('Attempting User Login: $email');
       // User login expects Form Data (OAuth2PasswordRequestForm)
@@ -61,6 +62,7 @@ class AuthService {
         body: {
           'username': email,
           'password': password,
+          'remember_me': rememberMe.toString(),
         },
       );
 
@@ -148,6 +150,38 @@ class AuthService {
       } else {
         final data = json.decode(response.body);
         return {'success': false, 'message': data['detail'] ?? 'Failed to send notification'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error: $e'};
+    }
+  }
+  /// Admin: Create new admin
+  Future<Map<String, dynamic>> createAdmin({
+    required String name,
+    required String email,
+    required bool isSuperuser,
+  }) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/admin/create-admin'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'name': name,
+          'email': email,
+          'is_superuser': isSuperuser,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'message': data['message'] ?? 'Admin created successfully'};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'message': data['detail'] ?? 'Failed to create admin'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Network error: $e'};

@@ -4,6 +4,9 @@ from passlib.context import CryptContext
 from src.services.utils import generate_access_token
 from src.core.logger import setup_logger
 
+from src.core.constant_manger import _DEFAULT_ACCESS_TOKEN_EXPIRY
+from datetime import timedelta
+
 password_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
@@ -38,12 +41,13 @@ class AuthService:
             self.logger.warning("❌ Email not verified")
             raise HTTPException(401, "Email not verified")
 
-    def generate_token(self, entity) -> str:
+    def generate_token(self, entity, expiry: timedelta | None = None) -> str:
         return generate_access_token(
             data={
                 "user": {
                     "id": str(entity.id),
                     "name": getattr(entity, "name", "admin"),
                 }
-            }
+            },
+            expiry=expiry if expiry else _DEFAULT_ACCESS_TOKEN_EXPIRY
         )

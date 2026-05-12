@@ -11,6 +11,7 @@ class AdminMessage(BaseModel):
 class AdminLogin(BaseModel):
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 class AdminNotificationRequest(BaseModel):
     user_email: EmailStr

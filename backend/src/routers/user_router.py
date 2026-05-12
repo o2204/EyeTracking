@@ -56,10 +56,12 @@ async def update_user(
 async def login_user(
     request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: UserServiceDep,
+    remember_me: bool = Form(False)
 ):
     token = await service.login(
         request_form.username, 
-        request_form.password
+        request_form.password,
+        is_persistent=remember_me
     )
 
     return {

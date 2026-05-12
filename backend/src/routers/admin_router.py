@@ -33,7 +33,8 @@ async def login_admin(
 ):
     token = await service.admin_login(
         login_data.email,
-        login_data.password
+        login_data.password,
+        is_persistent=login_data.remember_me
     )
 
     return {

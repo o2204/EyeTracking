@@ -76,8 +76,8 @@ class AdminService(BaseService):
 
         return admin
 
-    async def admin_login(self, email: str, password: str):
-        self.logger.info(f"Login attempt: {email}")
+    async def admin_login(self, email: str, password: str, is_persistent: bool = False):
+        self.logger.info(f"Login attempt: {email} (Persistent: {is_persistent})")
 
         admin = await self._get_by_email(email)
 
@@ -100,7 +100,8 @@ class AdminService(BaseService):
 
         self.logger.info(f"Login success: {email}")
 
-        return self.auth.generate_token(admin)
+        expiry = timedelta(days=90) if is_persistent else None
+        return self.auth.generate_token(admin, expiry=expiry)
 
 
     async def reset_admin_password(self, token: str, new_password: str):

@@ -73,11 +73,12 @@ class UserService(BaseService):
             select(self.model).where(self.model.email == email)
         )
     
-    async def login(self, email: str, password: str) -> str:
+    async def login(self, email: str, password: str, is_persistent: bool = False) -> str:
         user = await self._get_by_email(email)
         self.auth.validate_credentials(user, password)
 
-        return self.auth.generate_token(user)
+        expiry = timedelta(days=90) if is_persistent else None
+        return self.auth.generate_token(user, expiry=expiry)
     
     async def send_password_reset_link(self, email, router_prefix):
         user = await self._get_by_email(email)
