@@ -6,9 +6,8 @@ from pydantic import EmailStr
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
-from src.schemas.user_schema import UserCreate, GoogleToken, UserLogin
-from src.core.cointer import UserServiceDep, get_user_token
-from src.schemas.user_schema import UserRead
+from src.schemas.user_schema import UserCreate, GoogleToken, UserLogin, UserRead, UserUpdate
+from src.core.cointer import UserServiceDep, get_user_token, UserDep
 from src.clients.db.redis import add_jti_to_blacklist
 from src.core.config import settings
 from src.core.cointer import templates
@@ -46,6 +45,31 @@ async def create_user(
     )
 
 
+@user_router.get("/me", response_model=UserRead)
+async def get_me(
+    user: UserDep
+):
+    """
+    Get the current logged in user's profile
+    """
+    return user
+
+
+@user_router.patch("/update", response_model=UserRead)
+async def update_user(
+    update_data: UserUpdate,
+    user: UserDep,
+    user_service: UserServiceDep
+):
+    """
+    Update the current logged in user's profile
+    """
+    return await user_service.update_user(
+        user.id, 
+        update_data.model_dump(exclude_unset=True)
+    )
+
+
 ### Login the user 
 @user_router.post("/login")
 async def login_user(
@@ -53,7 +77,7 @@ async def login_user(
     service: UserServiceDep,
 ):
     token = await service.login(
-        login_data.email, 
+        login_data.username, 
         login_data.password
     )
 

@@ -8,3 +8,12 @@ class AdminCreate(BaseModel):
 
 class AdminMessage(BaseModel):
     message: str
+class AdminLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class AdminNotificationRequest(BaseModel):
+    user_email: EmailStr
+    subject: str
+    message: str
+    notification_type: str = "email" # "email" or "sms"

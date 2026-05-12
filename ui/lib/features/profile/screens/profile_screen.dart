@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../routes/app_routes.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../theme/app_theme.dart';
 import '../widgets/profile_menu_item.dart';
 import '../../../main.dart';
 import '../../../services/theme_service.dart';
 import '../../../services/user_service.dart';
+import '../../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -49,8 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('access_token');
+              await AuthService().logout();
               if (mounted) {
                 Navigator.pop(context);
                 Navigator.pushNamedAndRemoveUntil(
@@ -156,7 +155,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ProfileMenuItem(
                   icon: Icons.person_outline,
                   title: 'Edit Profile',
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.editProfile),
+                  onTap: () async {
+                    final result = await Navigator.pushNamed(
+                        context, AppRoutes.editProfile);
+                    if (result == true) {
+                      _fetchUserData();
+                    }
+                  },
                 ),
                 ProfileMenuItem(
                   icon: Icons.notifications_none,

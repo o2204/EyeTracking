@@ -3,11 +3,12 @@ import 'dart:ui';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tech_grid_painter.dart';
 import '../services/api_config.dart';
+import '../routes/app_routes.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -121,17 +122,18 @@ class _SignupScreenState extends State<SignupScreen>
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('access_token', data['access_token']);
+          const storage = FlutterSecureStorage();
+          await storage.write(key: 'access_token', value: data['access_token']);
+          await storage.write(key: 'is_admin', value: 'false');
 
-          if (mounted) Navigator.pushReplacementNamed(context, '/home');
+          if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
         } else {
           final error = json.decode(response.body);
           String errorMessage = 'Google authentication failed';
           if (error['detail'] is String) {
             errorMessage = error['detail'];
           }
-
+          
           if (mounted) {
             setState(() {
               _errorMessage = errorMessage;
@@ -749,7 +751,7 @@ class _SignupScreenState extends State<SignupScreen>
           ),
         );
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/home');
+          if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
         });
       },
       child: ClipRRect(

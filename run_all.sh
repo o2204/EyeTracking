@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Kill any existing processes holding ports 3000, 8000, or 8001
 echo "Cleaning up existing processes on ports 3000, 8000, 8001..."
 kill -9 $(lsof -t -i :3000) 2>/dev/null || true
@@ -12,12 +10,12 @@ cleanup() {
     kill $(jobs -p) 2>/dev/null || true
     exit 0
 }
+
 # Catch Ctrl+C and script termination
 trap cleanup SIGINT SIGTERM
 
 # 1. Start Backend API (Port 8000)
 echo "Starting Backend API (Port 8000)..."
-source backend/venv/bin/activate
 uvicorn src.main:app --reload --port 8000 &
 BACKEND_PID=$!
 

@@ -172,3 +172,29 @@ class UserService(BaseService):
             select(func.count()).select_from(self.model).where(self.model.email_verified.is_(True)) ## When is_(True) is used, it generates the SQL condition "email_verified IS TRUE"
         )
         return result or 0
+    async def update_user(self, user_id: UUID, update_data: dict) -> UserModel:
+        user = await self._get(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        if "name" in update_data and update_data["name"]:
+            user.name = update_data["name"]
+        
+        if "email" in update_data and update_data["email"]:
+            # Check if email is already taken by another user
+            existing_user = await self._get_by_email(update_data["email"])
+            if existing_user and existing_user.id != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
+            user.email = update_data["email"]
+        
+        if "password" in update_data and update_data["password"]:
+            user.password_hash = self.auth.hash_password(update_data["password"])
+        
+        await self._update(user)
+        return user

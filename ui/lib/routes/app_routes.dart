@@ -13,6 +13,7 @@ import '../features/profile/screens/notifications_screen.dart';
 import '../features/profile/screens/privacy_security_screen.dart';
 import '../screens/interactive_intro_screen.dart';
 import '../screens/camera_streaming_screen.dart';
+import '../screens/admin_login_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -43,7 +44,10 @@ class AppRoutes {
         signup: (_) => const SignupScreen(),
         adminLogin: (_) => const AdminLoginScreen(),
         adminDashboard: (_) => const AdminDashboardScreen(),
-        forgotPassword: (_) => const ForgotPasswordScreen(),
+        forgotPassword: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return ForgotPasswordScreen(isAdmin: args?['isAdmin'] ?? false);
+        },
         profile: (_) => const ProfileScreen(),
         editProfile: (_) => const EditProfileScreen(),
         helpSupport: (_) => const HelpSupportScreen(),

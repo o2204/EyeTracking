@@ -16,7 +16,7 @@ from src.core.cointer import (
 
 from src.core.config import settings
 from src.core.cointer import templates
-from src.schemas.admin_schema import AdminCreate, AdminMessage
+from src.schemas.admin_schema import AdminCreate, AdminMessage, AdminLogin, AdminNotificationRequest
 
 
 admin_router = APIRouter(
@@ -28,12 +28,12 @@ admin_router = APIRouter(
 # Admin Login (No auth required)
 @admin_router.post("/login") 
 async def login_admin(
-    request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    login_data: AdminLogin,
     service: AdminServiceDep,
 ):
     token = await service.admin_login(
-        request_form.username,
-        request_form.password
+        login_data.email,
+        login_data.password
     )
 
     return {
@@ -207,19 +207,32 @@ async def get_verified_users_count(
     return {"verified_users": count}
 
 
-# Send Notification to User (admin only)
+# Send Notification to User
 @admin_router.post("/send/{user_id}")
 async def send_notification_to_user(
     user_id: str,
     data: AdminMessage,
-    _admin: AdminDep,                      # auth guard — was missing!
-    manager: ConnectionMangerServiceDep,
+    manager: ConnectionMangerServiceDep
 ):
     await manager.send_notification_to_user(
         user_id,
         {
             "type": "admin_message",
-            "message": data.message,
-        },
+            "message": data.message
+        }
     )
+
+    return {"message": "Notification sent successfully"}
+
+
+@admin_router.post("/send-notification", response_model=AdminMessage)
+async def send_notification(
+    notification: AdminNotificationRequest,
+    service: AdminServiceDep,
+    current_admin: AdminDep
+):
+    """
+    Send an email or SMS notification to a user (Admin only)
+    """
+    await service.send_user_notification(notification)
     return {"message": "Notification sent successfully"}

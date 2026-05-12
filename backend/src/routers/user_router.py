@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Form,  Request
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 
-from src.schemas.user_schema import UserCreate, UserRead
+from src.schemas.user_schema import UserCreate, UserRead, UserUpdate
 from src.core.cointer import UserServiceDep, get_user_token, UserDep
 from src.clients.db.redis import add_jti_to_blacklist
 from src.core.config import settings
@@ -34,6 +34,21 @@ async def get_me(
     Get the current logged in user's profile
     """
     return user
+
+
+@user_router.patch("/update", response_model=UserRead)
+async def update_user(
+    update_data: UserUpdate,
+    user: UserDep,
+    user_service: UserServiceDep
+):
+    """
+    Update the current logged in user's profile
+    """
+    return await user_service.update_user(
+        user.id, 
+        update_data.model_dump(exclude_unset=True)
+    )
 
 
 ### Login the user 

@@ -16,7 +16,7 @@ from src.core.cointer import (
 
 from src.core.config import settings
 from src.core.cointer import templates
-from src.schemas.admin_schema import AdminCreate, AdminMessage
+from src.schemas.admin_schema import AdminCreate, AdminMessage, AdminLogin
 
 
 admin_router = APIRouter(
@@ -28,13 +28,10 @@ admin_router = APIRouter(
 # Admin Login (No auth required)
 @admin_router.post("/login") 
 async def login_admin(
-    request_form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    login_data: AdminLogin,
     service: AdminServiceDep,
 ):
-    token = await service.admin_login(
-        request_form.username,
-        request_form.password
-    )
+    token = await service.admin_login(login_data.email, login_data.password)
 
     return {
         "access_token": token,
@@ -114,6 +111,7 @@ async def reset_admin_password(
         }
     )
 
+
 ## Forgot Password - Send Reset Link
 @admin_router.get("/forgot-password")
 async def forgot_password(
@@ -122,6 +120,7 @@ async def forgot_password(
 ):
     await service.send_password_reset_link(email, admin_router.prefix)
     return {"detail": "Password reset link sent if the email exists in our system"}
+
 
 # Create Admin (Superuser only)
 @admin_router.post("/create-admin")

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status, BackgroundTasks
 
 from src.models.admin_model import AdminModel
+from src.models.user_model import UserModel
 from src.services.base_service import BaseService
 from src.services.auth_service import AuthService
 from src.services.utils import decode_url_safe_token, generate_url_safe_token
@@ -163,4 +164,34 @@ class AdminService(BaseService):
 
         await self._delete(admin)
 
+        return True
+
+    async def send_user_notification(self, data):
+        """Send a notification (email or SMS) to a user."""
+        self.logger.info(f"Sending {data.notification_type} notification to {data.user_email}")
+        
+        # Verify user exists in the database
+        user = await self.session.scalar(
+            select(UserModel).where(UserModel.email == data.user_email)
+        )
+        if not user:
+            raise HTTPException(404, detail="User with this email not found")
+
+        if data.notification_type == "email":
+            await self.notification_service.send_email(
+                recipients=[data.user_email],
+                subject=data.subject,
+                body=data.message
+            )
+        elif data.notification_type == "sms":
+            # Assuming user_email is actually a phone number for SMS in this context, 
+            # or we fetch the phone number from the user profile.
+            # For now, we'll just try to send it.
+            await self.notification_service.send_sms(
+                to=data.user_email, # User should probably provide phone number here if type is sms
+                body=data.message
+            )
+        else:
+            raise HTTPException(400, "Invalid notification type")
+        
         return True

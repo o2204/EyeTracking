@@ -5,9 +5,11 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/auth_card.dart';
 import '../widgets/tech_grid_painter.dart';
+import '../services/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  final bool isAdmin;
+  const ForgotPasswordScreen({super.key, this.isAdmin = false});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -18,6 +20,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
   final _emailController = TextEditingController();
   bool _isLoading = false;
   bool _emailSent = false;
+  final _authService = AuthService();
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -42,12 +45,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
   Future<void> _handleSendLink() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _emailSent = true;
-        });
+      
+      try {
+        // Detect whether current screen is admin or user login and call appropriate endpoint
+        final result = await _authService.forgotPassword(
+          _emailController.text.trim(),
+          widget.isAdmin,
+        );
+
+        if (result['success']) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _emailSent = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['message'])),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['message'] ?? 'Failed to send reset link')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Connection error: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -211,7 +241,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
           // Back to login
           GestureDetector(
             onTap: () =>
-                Navigator.pushReplacementNamed(context, AppRoutes.login),
+                Navigator.pushReplacementNamed(context, widget.isAdmin ? AppRoutes.adminLogin : AppRoutes.login),
             child: const Text(
               '← Back to Login',
               textAlign: TextAlign.center,
@@ -282,7 +312,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with Single
         PrimaryButton(
           label: 'Back to Login',
           onPressed: () =>
-              Navigator.pushReplacementNamed(context, AppRoutes.login),
+              Navigator.pushReplacementNamed(context, widget.isAdmin ? AppRoutes.adminLogin : AppRoutes.login),
           isLoading: false,
         ),
         const SizedBox(height: 16),

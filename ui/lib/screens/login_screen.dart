@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_colors.dart';
 import '../widgets/tech_grid_painter.dart';
 import 'signup_screen.dart';
 import '../services/api_config.dart';
+import '../services/auth_service.dart';
+import '../routes/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String? _errorMessage;
+  final _authService = AuthService();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: '1072246847119-j73e8abrtvtshr5s0qe4of26kevf5cra.apps.googleusercontent.com',
@@ -50,33 +53,16 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/user/login'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'username': email,
-          'password': password,
-        },
-      );
+      final result = await _authService.userLogin(email, password);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('access_token', data['access_token']);
-        
-        if (mounted) Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        final error = json.decode(response.body);
-        String errorMessage = 'Login failed';
-        if (error['detail'] is List) {
-          errorMessage = (error['detail'] as List).join('\n');
-        } else if (error['detail'] is String) {
-          errorMessage = error['detail'];
+      if (result['success']) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
         }
-
+      } else {
         if (mounted) {
           setState(() {
-            _errorMessage = errorMessage;
+            _errorMessage = result['message'] ?? 'Login failed';
           });
         }
       }
@@ -108,6 +94,8 @@ class _LoginScreenState extends State<LoginScreen>
       final String tokenToSend = auth.idToken ?? auth.accessToken ?? '';
 
       if (tokenToSend.isNotEmpty) {
+        // We can either add googleAuth to AuthService or keep it here.
+        // For consistency, I'll keep it here but ensure is_admin=false is set.
         final response = await http.post(
           Uri.parse('${ApiConfig.baseUrl}/user/google-auth'),
           headers: {'Content-Type': 'application/json'},
@@ -116,10 +104,13 @@ class _LoginScreenState extends State<LoginScreen>
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('access_token', data['access_token']);
+          
+          // Securely store token
+          const storage = FlutterSecureStorage();
+          await storage.write(key: 'access_token', value: data['access_token']);
+          await storage.write(key: 'is_admin', value: 'false');
 
-          if (mounted) Navigator.pushReplacementNamed(context, '/home');
+          if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
         } else {
           final error = json.decode(response.body);
           String errorMessage = 'Google authentication failed';
@@ -380,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen>
                   _adminTapCount++;
                   if (_adminTapCount >= 3) {
                     _adminTapCount = 0;
-                    Navigator.pushNamed(context, '/admin-login');
+                    Navigator.pushNamed(context, AppRoutes.adminLogin);
                   }
                 },
                 child: Container(
@@ -626,7 +617,7 @@ class _LoginScreenState extends State<LoginScreen>
       alignment: Alignment.centerRight,
       child: GestureDetector(
         onTap: () {
-          Navigator.pushNamed(context, '/forgot-password');
+          Navigator.pushNamed(context, AppRoutes.forgotPassword);
         },
         child: Text(
           'Forgot Password?',
@@ -737,7 +728,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pushReplacementNamed(context, '/home');
+          if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.home);
         });
       },
       child: ClipRRect(

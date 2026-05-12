@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../theme/app_theme.dart';
 import '../widgets/custom_text_field.dart';
+import '../../../services/user_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -14,16 +15,38 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController(text: 'Omar Atef');
-  final _emailController =
-      TextEditingController(text: 'EyeIntelligent@Omar.com');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  final UserService _userService = UserService();
+  bool _isLoading = false;
 
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
-  bool _isPicking = false; // ✅ الحل هنا
+  bool _isPicking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    setState(() => _isLoading = true);
+    final userData = await _userService.getCurrentUser();
+    if (userData != null && mounted) {
+      setState(() {
+        _nameController.text = userData['name'] ?? '';
+        _emailController.text = userData['email'] ?? '';
+        _isLoading = false;
+      });
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
 
   // ================= IMAGE PICK =================
   Future<void> _pickImage() async {
@@ -48,17 +71,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // ================= SAVE =================
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Profile updated successfully!'),
-          backgroundColor: AppTheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          behavior: SnackBarBehavior.floating,
-        ),
+      setState(() => _isLoading = true);
+
+      final success = await _userService.updateUser(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-      Navigator.pop(context);
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Profile updated successfully!'),
+              backgroundColor: AppTheme.primary,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(context, true); // Return true to indicate update
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to update profile. Please try again.'),
+              backgroundColor: Colors.red,
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -95,12 +142,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ? AppTheme.darkBackgroundGradient
               : AppTheme.lightBackgroundGradient,
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
                 const SizedBox(height: 16),
 
                 // ===== PROFILE IMAGE =====
@@ -230,10 +279,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

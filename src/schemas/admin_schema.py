@@ -8,3 +8,6 @@ class AdminCreate(BaseModel):
 
 class AdminMessage(BaseModel):
     message: str
+class AdminLogin(BaseModel):
+    email: EmailStr
+    password: str
