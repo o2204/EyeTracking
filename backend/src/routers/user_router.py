@@ -1,7 +1,11 @@
 from zxcvbn import zxcvbn
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form,  Request
+from fastapi import APIRouter, Depends, Form,  Request, UploadFile, HTTPException
+import shutil
+import os
+from deepface import DeepFace
+from src.clients.supabase.base_client import SupabaseBaseClient
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 
@@ -156,3 +160,9 @@ async def logout_user(
     return {
         "detail": "Successful Log Out"
     }
+@user_router.post("/face-login")
+async def face_login(
+    image: UploadFile,
+    service: UserServiceDep,
+):
+    return await service.face_login(image, user_router.prefix)

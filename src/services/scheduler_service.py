@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from src.core.config import settings
+
 
 class SchedulerService:
     def __init__(self, database_url: str):

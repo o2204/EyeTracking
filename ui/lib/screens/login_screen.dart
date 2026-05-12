@@ -11,6 +11,9 @@ import 'signup_screen.dart';
 import '../services/api_config.dart';
 import '../services/auth_service.dart';
 import '../routes/app_routes.dart';
+import 'package:camera/camera.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,6 +34,13 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _passwordController = TextEditingController();
   String? _errorMessage;
   final _authService = AuthService();
+  
+  CameraController? _cameraController;
+  FaceDetector? _faceDetector;
+  bool _isCameraInitialized = false;
+  bool _isFaceDetecting = false;
+  final FlutterTts _tts = FlutterTts();
+  bool _canLoginAutomatically = true;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: '1072246847119-j73e8abrtvtshr5s0qe4of26kevf5cra.apps.googleusercontent.com',
@@ -145,6 +155,118 @@ class _LoginScreenState extends State<LoginScreen>
     )..repeat(reverse: true);
     _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0)
         .animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _initializeCamera();
+    _initializeFaceDetector();
+  }
+
+  Future<void> _speak(String text) async {
+    await _tts.speak(text);
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+
+      _cameraController = CameraController(
+        cameras[1], // Front camera
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+        _startFaceDetection();
+      }
+    } catch (e) {
+      print('Error initializing camera: $e');
+    }
+  }
+
+  void _initializeFaceDetector() {
+    _faceDetector = FaceDetector(
+      options: FaceDetectorOptions(
+        enableContours: true,
+        performanceMode: FaceDetectorMode.fast,
+      ),
+    );
+  }
+
+  void _startFaceDetection() async {
+    if (_isFaceDetecting || !_isCameraInitialized || !_canLoginAutomatically) return;
+    _isFaceDetecting = true;
+
+    while (mounted && _canLoginAutomatically) {
+      try {
+        final image = await _cameraController!.takePicture();
+        final inputImage = InputImage.fromFilePath(image.path);
+        final faces = await _faceDetector!.processImage(inputImage);
+
+        if (faces.isNotEmpty) {
+          await _speak("Face detected, authenticating");
+          await _captureAndLogin(image.path);
+          break; // Stop loop after successful login attempt
+        }
+      } catch (e) {
+        print('Face detection error: $e');
+      }
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    _isFaceDetecting = false;
+  }
+
+  Future<void> _captureAndLogin(String imagePath) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseUrl}/user/face-login'),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          imagePath,
+        ),
+      );
+
+      final response = await request.send();
+      final responseData = await http.Response.fromStream(response);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(responseData.body);
+        const storage = FlutterSecureStorage();
+        await storage.write(key: 'access_token', value: data['token']);
+        
+        await _speak("Login successful");
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      } else {
+        await _speak("Face not recognized");
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Face not recognized. Please use email/password.';
+            _canLoginAutomatically = false; // Disable auto-login to allow manual entry
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Connection error: $e';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -152,6 +274,9 @@ class _LoginScreenState extends State<LoginScreen>
     _pulseController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _cameraController?.dispose();
+    _faceDetector?.close();
+    _tts.stop();
     super.dispose();
   }
 
@@ -376,9 +501,26 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 child: Container(
                   width: 160,
-                  height: 155,
-                  alignment: Alignment.center,
-                  child: _buildCharacterSVG(headphonesColor: Colors.white70),
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.teal.withOpacity(0.3), width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.teal.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: _isCameraInitialized
+                        ? AspectRatio(
+                            aspectRatio: 1,
+                            child: CameraPreview(_cameraController!),
+                          )
+                        : _buildCharacterSVG(headphonesColor: Colors.white70),
+                  ),
                 ),
               ),
             ],

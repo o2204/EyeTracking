@@ -7,9 +7,10 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    face_image_url: str | None = None
 
 class UserRead(UserBase):
-    pass 
+    face_image_url: str | None = None
 
 class UserUpdate(BaseModel):
     name: str | None = None

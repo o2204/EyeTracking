@@ -1,3 +1,5 @@
+from deepface import DeepFace
+
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import httpx
@@ -5,7 +7,7 @@ import httpx
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import BackgroundTasks, HTTPException, status 
+from fastapi import BackgroundTasks, HTTPException, status, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -75,8 +77,6 @@ class UserService(BaseService):
     
     async def verify_google_token(self, token: str):
         try:
-            # Note: id_token.verify_oauth2_token is synchronous. 
-            # We wrap it in a thread if needed, but for now we keep it simple.
             idinfo = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
@@ -111,7 +111,115 @@ class UserService(BaseService):
         self.auth.validate_credentials(user, password)
 
         return self.auth.generate_token(user)
-    
+
+
+    async def face_login(
+        self,
+        image: UploadFile,
+    ):
+
+        # Create temp directory
+        
+
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+
+        # Create unique filename
+        filename = f"{uuid4()}-{image.filename}"
+
+        # Create temp file path
+        temp_path = os.path.join(
+            temp_dir,
+            filename
+        )
+
+        # Save uploaded image temporarily
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(
+                image.file,
+                buffer
+            )
+
+        try:
+
+            # Upload image to Supabase Storage
+            bucket_name = "faces"
+
+            with open(temp_path, "rb") as file_data:
+
+                self.supabase.storage.from_(bucket_name).upload(
+                    path=filename,
+                    file=file_data,
+                    file_options={
+                        "content-type": image.content_type
+                    }
+                )
+
+            # Get uploaded image public URL
+            uploaded_image_url = (
+                self.supabase.storage
+                .from_(bucket_name)
+                .get_public_url(filename)
+            )
+
+            # Get all users with registered face images
+            users_result = await self.session.execute(
+                select(UserModel).where(
+                    UserModel.face_image_url.is_not(None)
+                )
+            )
+
+            users = users_result.scalars().all()
+
+            # Compare uploaded face against database users
+            for user in users:
+
+                try:
+
+                    result = DeepFace.verify(
+                        img1_path=temp_path,
+                        img2_path=user.face_image_url,
+                        enforce_detection=False
+                    )
+
+                    # Face matched successfully
+                    if result["verified"]:
+
+                        # Generate JWT token
+                        token = self.auth.generate_token(user)
+
+                        return {
+                            "success": True,
+                            "token": token,
+                            "uploaded_image_url": uploaded_image_url,
+                            "user": {
+                                "id": str(user.id),
+                                "name": user.name,
+                                "email": user.email
+                            }
+                        }
+
+                except Exception as e:
+
+                    print(
+                        f"Face verification failed for "
+                        f"{user.email}: {e}"
+                    )
+
+                    continue
+
+            # No face matched
+            raise HTTPException(
+                status_code=401,
+                detail="Face not recognized"
+            )
+
+        finally:
+
+            # Delete temporary image
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
     async def send_password_reset_link(self, email, router_prefix):
         user = await self._get_by_email(email)
 
@@ -169,7 +277,7 @@ class UserService(BaseService):
     
     async def get_verified_users_count(self) -> int:
         result = await self.session.scalar(
-            select(func.count()).select_from(self.model).where(self.model.email_verified.is_(True)) ## When is_(True) is used, it generates the SQL condition "email_verified IS TRUE"
+            select(func.count()).select_from(self.model).where(self.model.email_verified.is_(True))
         )
         return result or 0
     async def update_user(self, user_id: UUID, update_data: dict) -> UserModel:

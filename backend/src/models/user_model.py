@@ -36,6 +36,7 @@ class UserModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    face_image_url: Mapped[str] = mapped_column(String, nullable=True)
 
     calibration_points: Mapped[List["CalibrationPointsModel"]] = relationship(
         "CalibrationPointsModel",

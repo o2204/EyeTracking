@@ -9,6 +9,8 @@ import '../theme/app_colors.dart';
 import '../widgets/tech_grid_painter.dart';
 import '../services/api_config.dart';
 import '../routes/app_routes.dart';
+import 'package:camera/camera.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -29,6 +31,10 @@ class _SignupScreenState extends State<SignupScreen>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   String? _errorMessage;
+  
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  String? _capturedFacePath;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: '1072246847119-j73e8abrtvtshr5s0qe4of26kevf5cra.apps.googleusercontent.com',
@@ -161,6 +167,29 @@ class _SignupScreenState extends State<SignupScreen>
     )..repeat(reverse: true);
     _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0)
         .animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+      _cameraController = CameraController(cameras[1], ResolutionPreset.medium, enableAudio: false);
+      await _cameraController!.initialize();
+      if (mounted) setState(() => _isCameraInitialized = true);
+    } catch (e) {
+      print('Camera error: $e');
+    }
+  }
+
+  Future<void> _captureFace() async {
+    if (!_isCameraInitialized) return;
+    try {
+      final image = await _cameraController!.takePicture();
+      setState(() => _capturedFacePath = image.path);
+    } catch (e) {
+      setState(() => _errorMessage = 'Failed to capture face: $e');
+    }
   }
 
   @override
@@ -170,6 +199,7 @@ class _SignupScreenState extends State<SignupScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
