@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+
+<h2>User Analysis Report</h2>
+
+<p><b>User:</b> {{ username }}</p>
+
+<h3>Actions</h3>
+<table>
+    <tr>
+        <th>Device</th>
+        <th>Action</th>
+        <th>Time</th>
+    </tr>
+
+    {% for action in actions %}
+    <tr>
+        <td>{{ action.device }}</td>
+        <td>{{ action.action }}</td>
+        <td>{{ action.time }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h3>Recommendations</h3>
+<table>
+    <tr>
+        <th>Device</th>
+        <th>Recommendation</th>
+    </tr>
+
+    {% for rec in recommendations %}
+    <tr>
+        <td>{{ rec.device }}</td>
+        <td>{{ rec.recommendation }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>
