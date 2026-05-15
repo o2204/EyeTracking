@@ -4,7 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form,  Request, UploadFile, HTTPException
 import shutil
 import os
+import tensorflow as tf
+import keras
+tf.keras = keras
 from deepface import DeepFace
+
 from src.clients.supabase.base_client import SupabaseBaseClient
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr

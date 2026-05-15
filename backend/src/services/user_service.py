@@ -9,6 +9,7 @@ from src.models.user_model import UserModel
 from src.services.utils import decode_url_safe_token, generate_url_safe_token
 from src.core.config import settings
 from src.services.notification_service import NotificationService
+from src.core.logger import setup_logger
 
 from src.services.base_service import BaseService
 from src.services.auth_service import AuthService
@@ -20,6 +21,7 @@ class UserService(BaseService):
         self.model = model
         self.auth = auth_service
         self.notification_service = NotificationService(tasks)
+        self.logger = setup_logger("user_service")
     
     async def _add_user(self, data: dict, router_prefix: str) -> UserModel:
 
